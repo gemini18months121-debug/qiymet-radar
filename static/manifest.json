@@ -1,0 +1,21 @@
+{
+  "name": "Qiymət Radar - Rəqəmsal Satış Köməkçisi",
+  "short_name": "QiymətRadar",
+  "description": "9 Azərbaycan saytı üzrə rəqəmsal məhsulların ən aşağı qiymətlərini tapır",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/static/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

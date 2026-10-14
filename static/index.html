@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Qiymət Radar | Ən Ucuz Satış Köməkçisi</title>
+  
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="QiymətRadar">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <link rel="apple-touch-icon" href="/static/icon.svg">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <style>
+    body {
+      background-color: #0b0f19;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .glass {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .pulse-glow {
+      box-shadow: 0 0 25px rgba(99, 102, 241, 0.35);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white pb-6">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 glass px-4 py-3 shadow-lg">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center shadow-md">
+          <i class="fa-solid fa-radar text-white text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+            Qiymət Radar
+            <span class="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded bg-indigo-500/30 text-indigo-300 border border-indigo-500/30">PRO</span>
+          </h1>
+          <p class="text-xs text-slate-400">9 Azərbaycan Saytında Qiymət Axtarışı</p>
+        </div>
+      </div>
+      <button id="installBtn" class="hidden text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition">
+        <i class="fa-solid fa-download"></i> Quraşdır
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-4">
+
+    <!-- Search Box -->
+    <div class="glass rounded-2xl p-4 shadow-xl space-y-3">
+      <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+        Məhsul Axtarışı (CapCut, Windows 11...)
+      </label>
+      <form id="searchForm" class="relative flex items-center">
+        <input 
+          type="text" 
+          id="queryInput" 
+          placeholder="Məsələn: Capcut Pro, Windows 11..." 
+          class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-4 py-3.5 pr-12 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
+          required
+        >
+        <button 
+          type="submit" 
+          id="submitBtn" 
+          class="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white px-3.5 rounded-lg font-medium flex items-center justify-center hover:opacity-90 active:scale-95 transition"
+        >
+          <i class="fa-solid fa-magnifying-glass text-sm"></i>
+        </button>
+      </form>
+
+      <!-- Fast Shortcuts Chips -->
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 text-xs text-slate-300">
+        <span class="text-slate-500 text-[11px] shrink-0 font-medium"><i class="fa-solid fa-bolt text-amber-400"></i> Tez Seçim:</span>
+        <button type="button" onclick="quickSearch('Capcut Pro')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">CapCut Pro</button>
+        <button type="button" onclick="quickSearch('Windows 11 Pro')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">Windows 11</button>
+        <button type="button" onclick="quickSearch('Canva Pro')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">Canva Pro</button>
+        <button type="button" onclick="quickSearch('Office 365')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">Office 365</button>
+        <button type="button" onclick="quickSearch('Spotify')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">Spotify</button>
+      </div>
+    </div>
+
+    <!-- Supported Platforms List -->
+    <div class="px-1 text-[11px] text-slate-400 flex items-center justify-between">
+      <span>Yoxlanılan saytlar (9):</span>
+      <span class="text-indigo-400 font-medium">based, prom, elnur, itemhesab, dolphgame...</span>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="hidden glass rounded-2xl p-8 text-center space-y-3">
+      <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-500/20 border-t-indigo-500"></div>
+      <p class="text-sm font-medium text-slate-300">9 sayt eyni anda yoxlanılır...</p>
+      <p class="text-xs text-slate-500">Ən aşağı qiymət və rəqabət təhlili hazırlanır</p>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="hidden space-y-4">
+
+      <!-- Strategy Cards: Lowest vs Recommended Selling Price -->
+      <div class="grid grid-cols-2 gap-3">
+        <!-- Lowest Market Price -->
+        <div class="glass rounded-2xl p-3.5 border-l-4 border-amber-500 space-y-1">
+          <div class="flex items-center gap-1.5 text-xs text-amber-400 font-medium">
+            <i class="fa-solid fa-trophy"></i> Bazarın Ən Ucuzu
+          </div>
+          <div class="text-2xl font-black text-white" id="lowestPriceText">
+            0.00 ₼
+          </div>
+          <div class="text-[11px] text-slate-400 truncate" id="cheapestSiteText">
+            Tapılmadı
+          </div>
+        </div>
+
+        <!-- Recommended Selling Price -->
+        <div class="glass rounded-2xl p-3.5 border-l-4 border-emerald-500 pulse-glow space-y-1 bg-emerald-950/20">
+          <div class="flex items-center gap-1.5 text-xs text-emerald-400 font-bold">
+            <i class="fa-solid fa-fire"></i> Sənin Satış Qiymətin
+          </div>
+          <div class="text-2xl font-black text-emerald-300" id="recPriceText">
+            0.00 ₼
+          </div>
+          <div class="text-[11px] text-emerald-400/80 font-medium">
+            (Bazarın ən ucuzu ol!)
+          </div>
+        </div>
+      </div>
+
+      <!-- Items List -->
+      <div class="glass rounded-2xl p-4 shadow-xl space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-700/60">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-list-check text-indigo-400"></i> Tapılan Təkliflər (<span id="totalFoundText">0</span>)
+          </h2>
+          <span class="text-[11px] text-slate-400">Ucuzdan bahaya sıralanıb</span>
+        </div>
+
+        <div id="itemsContainer" class="space-y-2.5 pt-1">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Empty / Initial Guide -->
+    <div id="guideSection" class="glass rounded-2xl p-5 text-center space-y-3">
+      <div class="w-12 h-12 mx-auto rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 text-xl">
+        <i class="fa-solid fa-mobile-screen-button"></i>
+      </div>
+      <h3 class="text-sm font-semibold text-slate-200">Necə İstifadə Edilir?</h3>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Yuxarıdakı axtarış xanasına istənilən rəqəmsal məhsulun adını yazın. Sistem 9 Azərbaycan mağazasını anında skan edib bazarın ən ucuz qiymətini və sizin qoymalı olduğunuz ən sərfəli satış qiymətini çıxaracaq.
+      </p>
+    </div>
+
+  </main>
+
+  <!-- Footer / Telegram Bot Link -->
+  <footer class="max-w-md w-full mx-auto px-4 text-center space-y-2">
+    <div class="glass rounded-xl p-3 flex items-center justify-between text-xs text-slate-300">
+      <div class="flex items-center gap-2">
+        <i class="fa-brands fa-telegram text-sky-400 text-lg"></i>
+        <div class="text-left">
+          <div class="font-bold text-white">Telegram Botu Aktivdir</div>
+          <div class="text-[10px] text-slate-400">Mesaj yazıb 3 saniyəyə qiymət al</div>
+        </div>
+      </div>
+      <span class="px-2.5 py-1 bg-sky-500/20 text-sky-300 font-semibold rounded-lg text-[11px]">7/24 Bulud</span>
+    </div>
+    <p class="text-[10px] text-slate-500">© 2026 Qiymət Radar • Satış və Rəqabət Sistemi</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    // PWA Install prompt
+    let deferredPrompt;
+    const installBtn = document.getElementById('installBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.classList.remove('hidden');
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          installBtn.classList.add('hidden');
+        }
+        deferredPrompt = null;
+      }
+    });
+
+    // Quick search chip
+    function quickSearch(val) {
+      document.getElementById('queryInput').value = val;
+      doSearch(val);
+    }
+
+    // Form submit
+    document.getElementById('searchForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = document.getElementById('queryInput').value.trim();
+      if (q) doSearch(q);
+    });
+
+    async function doSearch(query) {
+      const loading = document.getElementById('loadingState');
+      const results = document.getElementById('resultsSection');
+      const guide = document.getElementById('guideSection');
+      
+      loading.classList.remove('hidden');
+      results.classList.add('hidden');
+      guide.classList.add('hidden');
+
+      try {
+        const resp = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await resp.json();
+        renderResults(data);
+      } catch (err) {
+        alert('Axtarış zamanı xəta baş verdi: ' + err.message);
+      } finally {
+        loading.classList.add('hidden');
+      }
+    }
+
+    function renderResults(data) {
+      const results = document.getElementById('resultsSection');
+      const itemsContainer = document.getElementById('itemsContainer');
+      
+      document.getElementById('lowestPriceText').innerText = data.lowest_price ? `${data.lowest_price.toFixed(2)} ₼` : 'Yoxdur';
+      document.getElementById('cheapestSiteText').innerText = data.cheapest_site ? `Mağaza: ${data.cheapest_site}` : '-';
+      document.getElementById('recPriceText').innerText = data.recommended_price ? `${data.recommended_price.toFixed(2)} ₼` : '0.00 ₼';
+      document.getElementById('totalFoundText').innerText = data.total_found;
+
+      itemsContainer.innerHTML = '';
+
+      if (data.items.length === 0) {
+        itemsContainer.innerHTML = `<div class="text-center py-6 text-xs text-slate-400">Bu məhsul üzrə heç bir nəticə tapılmadı.</div>`;
+      } else {
+        data.items.forEach((item, index) => {
+          const isCheapest = index === 0;
+          const card = document.createElement('div');
+          card.className = `p-3 rounded-xl border flex items-center justify-between transition ${
+            isCheapest 
+              ? 'bg-indigo-950/40 border-indigo-500/50 shadow-md ring-1 ring-indigo-500/30' 
+              : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+          }`;
+
+          card.innerHTML = `
+            <div class="space-y-1 pr-2 overflow-hidden">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold text-white px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700">
+                  ${item.site}
+                </span>
+                ${isCheapest ? '<span class="text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded">ƏN UCUZ</span>' : ''}
+              </div>
+              <div class="text-xs text-slate-300 truncate" title="${item.title}">
+                ${item.title}
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-base font-black ${isCheapest ? 'text-amber-300' : 'text-slate-100'}">
+                ${item.price.toFixed(2)} ₼
+              </div>
+              <a href="${item.url}" target="_blank" class="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center justify-end gap-1 font-medium">
+                Bax <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+              </a>
+            </div>
+          `;
+          itemsContainer.appendChild(card);
+        });
+      }
+
+      results.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
