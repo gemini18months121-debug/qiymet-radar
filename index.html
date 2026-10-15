@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Ucuzhesablar.com | Qiymət Radarı</title>
+  <title>Ucuzhesablar.com | Dəqiq Qiymət Radarı</title>
   
   <!-- PWA Meta Tags -->
   <link rel="manifest" href="/static/manifest.json">
@@ -50,10 +50,10 @@
             Ucuzhesablar.com
             <span class="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">LİDER</span>
           </h1>
-          <p class="text-xs text-slate-400">10 Mağaza Üzrə Rəqib və Qiymət Radarı</p>
+          <p class="text-xs text-slate-400">Dəqiq Müddət və Qiymət Radarı</p>
         </div>
       </div>
-      <a href="https://ucuzhesablar.com" target="_blank" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1 shadow-sm transition">
+      <a id="headerStoreBtn" href="https://ucuzhesablar.com" target="_blank" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1 shadow-sm transition">
         Sayta Keç <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
       </a>
     </div>
@@ -71,7 +71,7 @@
         <input 
           type="text" 
           id="queryInput" 
-          placeholder="Məsələn: Capcut Pro, Windows 11..." 
+          placeholder="Məsələn: Spotify, Canva Pro, Capcut..." 
           class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-4 py-3.5 pr-12 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
           required
         >
@@ -87,11 +87,11 @@
       <!-- Fast Shortcuts Chips -->
       <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 text-xs text-slate-300">
         <span class="text-slate-500 text-[11px] shrink-0 font-medium"><i class="fa-solid fa-bolt text-amber-400"></i> Tez Seçim:</span>
-        <button type="button" onclick="quickSearch('Capcut Pro')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">CapCut Pro</button>
-        <button type="button" onclick="quickSearch('Windows 11 Pro')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">Windows 11</button>
-        <button type="button" onclick="quickSearch('Canva Pro')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">Canva Pro</button>
-        <button type="button" onclick="quickSearch('Microsoft 365')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">Office 365</button>
         <button type="button" onclick="quickSearch('Spotify')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">Spotify</button>
+        <button type="button" onclick="quickSearch('Canva Pro')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">Canva Pro</button>
+        <button type="button" onclick="quickSearch('Windows 11 Pro')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">Windows 11</button>
+        <button type="button" onclick="quickSearch('Capcut Pro')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">CapCut</button>
+        <button type="button" onclick="quickSearch('Microsoft 365')" class="shrink-0 bg-slate-800/80 hover:bg-indigo-900/50 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition">Office 365</button>
       </div>
     </div>
 
@@ -104,53 +104,53 @@
     <!-- Loading State -->
     <div id="loadingState" class="hidden glass rounded-2xl p-8 text-center space-y-3">
       <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-amber-500/20 border-t-amber-500"></div>
-      <p class="text-sm font-medium text-slate-300">10 mağaza eyni anda analiz edilir...</p>
-      <p class="text-xs text-slate-500">Müddət və qiymət dəqiqliyi yoxlanılır</p>
+      <p class="text-sm font-medium text-slate-300">Dəqiq axtarış və aylıq qiymət hesablanır...</p>
+      <p class="text-xs text-slate-500">Yalnız axtardığınız məhsul üzrə nəticələr çıxarılır</p>
     </div>
 
     <!-- Results Section -->
     <div id="resultsSection" class="hidden space-y-4">
 
-      <!-- Status Header Card -->
+      <!-- Leader Status Header Card -->
       <div id="leaderBanner" class="glass rounded-2xl p-3.5 border-l-4 border-emerald-500 pulse-glow flex items-center justify-between bg-emerald-950/20">
         <div>
           <div class="text-xs text-emerald-400 font-bold flex items-center gap-1.5">
-            <i class="fa-solid fa-crown text-amber-400"></i> Bazarda Lider: Ucuzhesablar.com
+            <i class="fa-solid fa-crown text-amber-400"></i> Ən Sərfəli Qiymət: Ucuzhesablar.com
           </div>
-          <div class="text-xs text-slate-300 pt-0.5">
-            Bütün rəqiblərdən ən sərfəli qiymət sizdədir!
+          <div class="text-xs text-slate-300 pt-0.5" id="leaderBannerDesc">
+            Aylıq maya və ümumi qiymətə görə bazarda ən sərfəlisi sizsiniz!
           </div>
         </div>
         <div class="text-right">
           <div class="text-xl font-black text-emerald-400" id="ownerPriceText">0.00 ₼</div>
-          <div class="text-[10px] text-emerald-500 font-semibold">Bizim Qiymət</div>
+          <div class="text-[10px] text-emerald-500 font-semibold" id="ownerMonthlyText">Aylıq 0.00 ₼</div>
         </div>
       </div>
 
-      <!-- Action: Copy Sales Ad Text -->
-      <div class="glass rounded-xl p-3 flex items-center justify-between">
-        <div class="text-xs text-slate-300">
-          <div class="font-bold text-white flex items-center gap-1.5">
-            <i class="fa-solid fa-bullhorn text-amber-400"></i> Hazır Satış Mətni
+      <!-- Direct Product Link Button -->
+      <a 
+        id="directProductBtn" 
+        href="https://ucuzhesablar.com" 
+        target="_blank"
+        class="w-full glass rounded-xl p-3 flex items-center justify-between text-xs text-slate-200 hover:border-amber-500/60 transition group"
+      >
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-cart-shopping text-amber-400 text-base"></i>
+          <div>
+            <div class="font-bold text-white group-hover:text-amber-400 transition">Bu Məhsulu Ucuzhesablar.com-da Aç</div>
+            <div class="text-[10px] text-slate-400">Birbaşa məhsul səhifəsinə keçid</div>
           </div>
-          <div class="text-[11px] text-slate-400">WhatsApp / Sosial şəbəkə üçün</div>
         </div>
-        <button 
-          id="copyAdBtn" 
-          onclick="copyAdText()" 
-          class="bg-gradient-to-r from-amber-500 to-indigo-600 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition flex items-center gap-1.5"
-        >
-          <i class="fa-solid fa-copy"></i> Kopyala
-        </button>
-      </div>
+        <i class="fa-solid fa-arrow-right text-slate-400 group-hover:translate-x-1 transition text-xs"></i>
+      </a>
 
       <!-- Items List -->
       <div class="glass rounded-2xl p-4 shadow-xl space-y-3">
         <div class="flex items-center justify-between pb-2 border-b border-slate-700/60">
           <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-            <i class="fa-solid fa-list-check text-indigo-400"></i> Mağazalar Üzrə Nəticələr (<span id="totalFoundText">0</span>)
+            <i class="fa-solid fa-list-check text-indigo-400"></i> Tapılan Dəqiq Elanlar (<span id="totalFoundText">0</span>)
           </h2>
-          <span class="text-[11px] text-slate-400">Ucuzdan bahaya</span>
+          <span class="text-[11px] text-slate-400">Aylıq sərfəlilik sırası ilə</span>
         </div>
 
         <div id="itemsContainer" class="space-y-2.5 pt-1">
@@ -163,17 +163,17 @@
     <!-- Empty / Initial Guide -->
     <div id="guideSection" class="glass rounded-2xl p-5 text-center space-y-3">
       <div class="w-12 h-12 mx-auto rounded-full bg-indigo-500/10 flex items-center justify-center text-amber-400 text-xl">
-        <i class="fa-solid fa-bolt"></i>
+        <i class="fa-solid fa-scale-balanced"></i>
       </div>
-      <h3 class="text-sm font-semibold text-slate-200">10 Sayt Üzrə Dəqiq Qiymətlər</h3>
+      <h3 class="text-sm font-semibold text-slate-200">Ağıllı Qiymət və Müddət Müqayisəsi</h3>
       <p class="text-xs text-slate-400 leading-relaxed">
-        Yuxarıdakı axtarış xanasına istənilən rəqəmsal məhsulun adını yazın. Sistem <b>Ucuzhesablar.com</b> və digər 9 Azərbaycan mağazasını anında yoxlayıb hər bir elanın dəqiq adını, müddətini və qiymətini təqdim edəcək.
+        Sistem yalnız məbləğə baxmır, ayların fərqini də nəzərə alır. Məsələn, 4 ay üçün 6.20 ₼ verən təklif (aylıq 1.55 ₼), 1 ay üçün 4.99 ₼ verən təklifdən daha sərfəli hesablanır!
       </p>
     </div>
 
   </main>
 
-  <!-- Footer / Telegram Bot Info -->
+  <!-- Footer -->
   <footer class="max-w-md w-full mx-auto px-4 text-center space-y-2">
     <div class="glass rounded-xl p-3 flex items-center justify-between text-xs text-slate-300">
       <div class="flex items-center gap-2">
@@ -229,15 +229,25 @@
       const itemsContainer = document.getElementById('itemsContainer');
       const leaderBanner = document.getElementById('leaderBanner');
       const ownerPriceText = document.getElementById('ownerPriceText');
+      const ownerMonthlyText = document.getElementById('ownerMonthlyText');
+      const directProductBtn = document.getElementById('directProductBtn');
       
       document.getElementById('totalFoundText').innerText = data.total_found;
 
-      if (data.is_owner_cheapest) {
+      if (data.owner_product_url) {
+        directProductBtn.href = data.owner_product_url;
+      } else {
+        directProductBtn.href = "https://ucuzhesablar.com";
+      }
+
+      if (data.is_owner_cheapest && data.owner_best) {
         leaderBanner.classList.remove('hidden');
-        ownerPriceText.innerText = `${data.owner_lowest.toFixed(2)} ₼`;
-      } else if (data.owner_lowest) {
+        ownerPriceText.innerText = `${data.owner_best.price.toFixed(2)} ₼`;
+        ownerMonthlyText.innerText = `Aylıq ${data.owner_best.monthly_price.toFixed(2)} ₼ (${data.owner_best.duration})`;
+      } else if (data.owner_best) {
         leaderBanner.classList.remove('hidden');
-        ownerPriceText.innerText = `${data.owner_lowest.toFixed(2)} ₼`;
+        ownerPriceText.innerText = `${data.owner_best.price.toFixed(2)} ₼`;
+        ownerMonthlyText.innerText = `Aylıq ${data.owner_best.monthly_price.toFixed(2)} ₼ (${data.owner_best.duration})`;
       } else {
         leaderBanner.classList.add('hidden');
       }
@@ -245,7 +255,7 @@
       itemsContainer.innerHTML = '';
 
       if (data.items.length === 0) {
-        itemsContainer.innerHTML = `<div class="text-center py-6 text-xs text-slate-400">Heç bir mağazada nəticə tapılmadı.</div>`;
+        itemsContainer.innerHTML = `<div class="text-center py-6 text-xs text-slate-400">Heç bir mağazada dəqiq uyğun nəticə tapılmadı.</div>`;
       } else {
         data.items.forEach((item, index) => {
           const isOwner = item.is_owner;
@@ -267,7 +277,7 @@
                 <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700/60">
                   📅 ${item.duration}
                 </span>
-                ${isCheapest ? '<span class="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded">ƏN UCUZ</span>' : ''}
+                ${isCheapest ? '<span class="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded">ƏN SƏRFƏLİ</span>' : ''}
               </div>
               <div class="text-xs text-slate-300 truncate" title="${item.title}">
                 ${item.title}
@@ -277,7 +287,10 @@
               <div class="text-base font-black ${isOwner ? 'text-amber-300' : (isCheapest ? 'text-emerald-300' : 'text-slate-100')}">
                 ${item.price.toFixed(2)} ₼
               </div>
-              <a href="${item.url}" target="_blank" class="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center justify-end gap-1 font-medium">
+              <div class="text-[10px] text-slate-400">
+                Aylıq: <span class="font-bold text-slate-200">${item.monthly_price.toFixed(2)} ₼</span>
+              </div>
+              <a href="${item.url}" target="_blank" class="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center justify-end gap-1 font-medium pt-0.5">
                 Elana bax <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
               </a>
             </div>
@@ -287,33 +300,6 @@
       }
 
       results.classList.remove('hidden');
-    }
-
-    function copyAdText() {
-      if (!currentData || !currentData.items || currentData.items.length === 0) return;
-      
-      const q = currentData.query;
-      const best = currentData.items.find(i => i.is_owner) || currentData.items[0];
-      const price = best.price.toFixed(2);
-      const duration = best.duration || '1 Ay';
-
-      const adText = `🔥 BAZARIN ƏN UCUZ QİYMƏTİ BİZDƏ! 🔥\n\n` +
-        `⚡ Məhsul: ${q}\n` +
-        `📅 Müddət: ${duration}\n` +
-        `💰 QİYMƏT: ${price} AZN!\n\n` +
-        `✅ 100% Rəsmi və Zəmanətli\n` +
-        `✅ Ani və avtomatik çatdırılma\n` +
-        `🚀 Bütün digər saytlardan daha ucuz!\n\n` +
-        `🌐 Saytımızdan sifariş verin: https://ucuzhesablar.com\n` +
-        `📲 WhatsApp: https://wa.me/994773026579`;
-
-      navigator.clipboard.writeText(adText).then(() => {
-        const btn = document.getElementById('copyAdBtn');
-        btn.innerHTML = `<i class="fa-solid fa-check"></i> Kopyalandı!`;
-        setTimeout(() => {
-          btn.innerHTML = `<i class="fa-solid fa-copy"></i> Kopyala`;
-        }, 2000);
-      });
     }
   </script>
 </body>
