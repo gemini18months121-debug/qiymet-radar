@@ -6,7 +6,10 @@ import logging
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 from scraper import search_all_sites
-from database import init_db, log_user_activity, get_statistics
+from database import (
+    init_db, log_user_activity, get_statistics,
+    check_user_wheel_status, spin_wheel, get_wheel_stock_info, get_wheel_winners
+)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -19,14 +22,16 @@ USER_KEYBOARD = [
     ["🎬 Capcut Pro", "🪟 Windows 11 Pro"],
     ["🎨 Canva Pro", "💼 Microsoft 365"],
     ["🎵 Spotify", "🍿 Netflix 4K"],
-    ["👑 Ucuzhesablar.com", "❓ Kömək"]
+    ["🎡 Çarxıfələk (Hədiyyə)", "👑 Ucuzhesablar.com"],
+    ["❓ Kömək"]
 ]
 
 ADMIN_KEYBOARD = [
     ["🎬 Capcut Pro", "🪟 Windows 11 Pro"],
     ["🎨 Canva Pro", "💼 Microsoft 365"],
     ["🎵 Spotify", "🍿 Netflix 4K"],
-    ["📊 Statistika Paneli", "👑 Ucuzhesablar.com"]
+    ["🎡 Çarxıfələk", "📊 Statistika Paneli"],
+    ["👑 Ucuzhesablar.com"]
 ]
 
 TRACKED_PRODUCTS = [
@@ -57,6 +62,14 @@ def build_stats_message():
     baku_tz = datetime.timezone(datetime.timedelta(hours=4))
     now = datetime.datetime.now(baku_tz).strftime('%H:%M:%S • %d.%m.%Y')
 
+    # Wheel info
+    stock_info = get_wheel_stock_info()
+    winners = get_wheel_winners()
+    
+    stock_text = ""
+    for name, total, rem in stock_info:
+        stock_text += f"   • {name}: <code>{rem}/{total} ədəd qalıb</code>\n"
+
     top_text = ""
     if stats['top_searches']:
         for i, (q, count) in enumerate(stats['top_searches'], 1):
@@ -81,6 +94,9 @@ def build_stats_message():
         f"🟢 <b>Hal-hazırda Aktiv (Online):</b> <code>{stats['online_users']} nəfər</code> <i>(son 15 dəqiqə)</i>\n"
         f"⚡ <b>Son 24 saatda Aktiv:</b> <code>{stats['active_24h']} nəfər</code>\n"
         f"🔍 <b>Toplam Axtarış Sayı:</b> <code>{stats['total_searches']} dəfə</code>\n\n"
+        "🎡 <b>Çarxıfələk Vəziyyəti:</b>\n"
+        f"   🏆 Qalib sayı: <code>{len(winners)} nəfər</code>\n"
+        f"{stock_text}\n"
         "📈 <b>Ən Çox Axtarılan Məhsullar (Top 5):</b>\n"
         f"{top_text}\n"
         "👤 <b>Son Aktiv İstifadəçilər:</b>\n"
@@ -101,12 +117,11 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
         "👋 <b>Salam! Qiymət Radar Botuna xoş gəlmisiniz.</b>\n\n"
         "👑 <b>Ucuzhesablar.com</b> və Azərbaycanın <b>22 əsas rəqəmsal satış saytını</b> "
-        "(based, prom, elnur, itemhesab, lisenziya, digibaku, igame, strokt, wepay, smartelan və s.) "
         "eyni anda analiz edib <b>ən sərfəli qiyməti</b> tapıram.\n\n"
+        "🎡 <b>Xüsusi Kampaniya:</b> «🎡 Çarxıfələk» bölməsinə daxil olaraq şansınızı yoxlaya və pulsuz premium hədiyyələr qazana bilərsiniz!\n\n"
         "🔍 <b>Axtarış üçün:</b>\n"
         "• Sadəcə məhsulun adını yazın (məs: <code>Capcut</code>, <code>Spotify</code>, <code>Canva</code>)\n"
-        "• Və ya <code>/search &lt;məhsul&gt;</code> əmrindən istifadə edin.\n\n"
-        "💡 <i>Aşağıdakı hazır düymələrdən də dərhal seçə bilərsiniz:</i>"
+        "• Və ya <code>/search &lt;məhsul&gt;</code> əmrindən istifadə edin."
     )
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=reply_markup)
 
@@ -117,7 +132,8 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "ℹ️ <b>Botdan İstifadə Qaydaları:</b>\n\n"
         "1. <b>23 Saytda Axtarış:</b> <code>/search Canva Pro</code> və ya birbaşa məhsul adını yazın. Bot bütün 23 mağazada anında axtarış aparır.\n"
         "2. <b>Ağıllı Aylıq Müqayisə:</b> Tək məbləğə görə deyil, aylıq maya dəyərinə görə ən sərfəli təklif önə çıxarılır.\n"
-        "3. <b>Birbaşa Keçid:</b> Nəticənin altındakı düymə sizi birbaşa həmin məhsulun Ucuzhesablar.com-dakı səhifəsinə aparır."
+        "3. <b>🎡 Çarxıfələk:</b> Hər istifadəçi yalnız 1 dəfə çarxı çevirərək Gemini Pro 18 ay, Microsoft 365 və ya Canva Pro qazana bilər!\n"
+        "4. <b>Birbaşa Keçid:</b> Nəticənin altındakı düymə sizi birbaşa həmin məhsulun Ucuzhesablar.com-dakı səhifəsinə aparır."
     )
     await update.message.reply_text(text, parse_mode='HTML')
 
@@ -130,6 +146,55 @@ async def website_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(text, parse_mode='HTML')
 
+async def wheel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Wheel of Fortune entrypoint."""
+    user = update.effective_user
+    log_user_activity(user.id, user.username, user.first_name)
+
+    has_spun, prize, spin_time = check_user_wheel_status(user.id)
+    if has_spun:
+        if prize:
+            msg = (
+                f"⛔ <b>Siz artıq çarxı çevirmisiniz!</b>\n\n"
+                f"🎉 Qazandığınız hədiyyə: <b>{prize}</b> 🎁\n\n"
+                f"✅ Hədiyyənizi təhvil almaq üçün Adminlə əlaqə saxlayın:\n"
+                f"👤 Admin: @Zeka233\n"
+                f"📲 WhatsApp: https://wa.me/994773026579\n"
+                f"🆔 Sizin ID: <code>{user.id}</code>"
+            )
+        else:
+            msg = (
+                "⛔ <b>Siz artıq çarxı çevirmisiniz!</b>\n\n"
+                "😢 Təəssüf ki, bəxtiniz gətirməmişdi. Hər istifadəçinin sistemdə <b>yalnız 1 dəfə</b> şansı var.\n\n"
+                "🛍️ Ən ucuz qiymətlərlə alış-veriş üçün saytımıza daxil olun:\n"
+                "🌐 https://ucuzhesablar.com"
+            )
+        await update.message.reply_text(msg, parse_mode='HTML')
+        return
+
+    # User has not spun yet - present the wheel
+    stock_info = get_wheel_stock_info()
+    stock_lines = ""
+    for name, total, rem in stock_info:
+        stock_lines += f"• 🎁 <b>{name}</b> — <i>{rem} ədəd qalıb</i>\n"
+
+    msg = (
+        "🎡 <b>UCUZHESABLAR.COM — BÖYÜK ÇARXIFƏLƏK!</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "Şansınızı yoxlayın və tamamilə <b>PULSUZ</b> premium hədiyyələrdən birini qazanın!\n\n"
+        "🏆 <b>Mövcud Hədiyyələr (Toplam 5 Ədəd):</b>\n"
+        f"{stock_lines}\n"
+        "🎯 <b>Şərtlər:</b>\n"
+        "• Çarxın <b>20 gözü</b> var.\n"
+        "• Hər istifadəçinin <b>yalnız 1 dəfə</b> çevirmək haqqı var (Telegram ID ilə qeydə alınır).\n\n"
+        "👇 <i>Şansınızı yoxlamaq üçün aşağıdakı düyməyə basın:</i>"
+    )
+
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎰 Çarxı Fırlat (1 Şans)!", callback_data="spin_wheel")]
+    ])
+    await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
+
 async def stat_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     if user_id != str(ADMIN_CHAT_ID):
@@ -141,6 +206,30 @@ async def stat_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("🔄 Məlumatları Yenilə", callback_data="refresh_stats")]
     ])
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
+
+async def winners_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin command to list all wheel winners."""
+    user_id = str(update.effective_user.id)
+    if user_id != str(ADMIN_CHAT_ID):
+        await update.message.reply_text("⛔ Bu əmr yalnız Admin üçündür.")
+        return
+
+    winners = get_wheel_winners()
+    if not winners:
+        await update.message.reply_text("ℹ️ Hələlik çarxıfələkdə heç bir qalib yoxdur.")
+        return
+
+    lines = ["🏆 <b>ÇARXIFƏLƏK QALİBLƏRİ SİYAHISI:</b>\n━━━━━━━━━━━━━━━━━━━━"]
+    for i, (uid, uname, fname, prize, dt) in enumerate(winners, 1):
+        uname_str = f"(@{uname})" if uname else ""
+        lines.append(
+            f"{i}. <b>{fname}</b> {uname_str}\n"
+            f"   🎁 Hədiyyə: <b>{prize}</b>\n"
+            f"   🆔 ID: <code>{uid}</code>\n"
+            f"   💬 <a href=\"tg://user?id={uid}\">İstifadəçiyə yaz</a>\n"
+        )
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    await update.message.reply_text("\n".join(lines), parse_mode='HTML')
 
 async def search_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = " ".join(context.args).strip() if context.args else ""
@@ -155,7 +244,6 @@ async def search_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     raw_text = update.message.text.strip()
-    user = update.effective_user
     
     if raw_text == "❓ Kömək":
         await help_cmd(update, context)
@@ -165,6 +253,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     elif raw_text == "📊 Statistika Paneli":
         await stat_cmd(update, context)
+        return
+    elif "çarxıfələk" in raw_text.lower() or "carx" in raw_text.lower():
+        await wheel_cmd(update, context)
         return
 
     # Clean emojis (e.g. "🎬 Capcut Pro" -> "Capcut Pro")
@@ -269,9 +360,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    user_id = str(update.effective_user.id)
+    user = update.effective_user
+    user_id = str(user.id)
 
-    # Refresh statistics callback
+    # 1. Refresh statistics callback (Admin only)
     if query.data == "refresh_stats":
         if user_id != str(ADMIN_CHAT_ID):
             await query.message.reply_text("⛔ Bu panel yalnız Admin üçündür.")
@@ -283,7 +375,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.edit_text(msg, parse_mode='HTML', reply_markup=kb)
         return
 
-    # Ad text callback (Admin only)
+    # 2. Ad text callback (Admin only)
     if query.data.startswith("ad:"):
         if user_id != str(ADMIN_CHAT_ID):
             await query.message.reply_text("⛔ Bu funksiya yalnız Admin üçündür.")
@@ -302,6 +394,94 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"<code>{ad_msg}</code>"
         )
         await query.message.reply_text(reply, parse_mode='HTML', disable_web_page_preview=True)
+        return
+
+    # 3. Spin Wheel callback
+    if query.data == "spin_wheel":
+        # Check if already spun
+        has_spun, prev_prize, _ = check_user_wheel_status(user.id)
+        if has_spun:
+            await query.message.reply_text(
+                "⛔ <b>Siz artıq çarxı çevirmisiniz!</b> Hər istifadəçinin yalnız 1 şansı var.",
+                parse_mode='HTML'
+            )
+            return
+
+        # Spinning animation
+        await query.message.edit_text(
+            "🎰 <b>Çarx fırlanır...</b> 🎡\n\n"
+            "<code>[ ░░░░░░░░░░ ] 25%</code>\n"
+            "<i>Bəxtiniz yoxlanılır...</i>",
+            parse_mode='HTML'
+        )
+        await asyncio.sleep(1.0)
+
+        await query.message.edit_text(
+            "🎰 <b>Çarx fırlanır...</b> 🎯\n\n"
+            "<code>[ ██████████ ] 100%</code>\n"
+            "<i>Nəticə təyin edilir...</i>",
+            parse_mode='HTML'
+        )
+        await asyncio.sleep(0.8)
+
+        # Execute spin in database
+        status, prize_won = spin_wheel(user.id, user.username, user.first_name)
+
+        if status == "WIN" and prize_won:
+            # Winner message to user
+            win_msg = (
+                f"🎉 <b>TƏBRİKLƏR! SİZ QALİB OLDUNUZ!</b> 🎁\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"🏆 Qazandığınız Hədiyyə: <b>{prize_won}</b>!\n\n"
+                f"✅ Hədiyyənizi aktivləşdirmək və təhvil almaq üçün birbaşa Adminlə əlaqə saxlayın:\n"
+                f"👤 <b>Admin:</b> @Zeka233\n"
+                f"📲 <b>WhatsApp:</b> https://wa.me/994773026579\n"
+                f"🆔 <b>Sizin Telegram ID:</b> <code>{user.id}</code>\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"🌐 https://ucuzhesablar.com"
+            )
+            await query.message.edit_text(win_msg, parse_mode='HTML')
+
+            # SEND NOTIFICATION IMMEDIATELY TO ADMIN!
+            if ADMIN_CHAT_ID:
+                baku_tz = datetime.timezone(datetime.timedelta(hours=4))
+                now_str = datetime.datetime.now(baku_tz).strftime('%H:%M • %d.%m.%Y')
+                uname_str = f"(@{user.username})" if user.username else "(istifadəçi adı yoxdur)"
+                
+                admin_alert = (
+                    "🚨 <b>YENİ ÇARXIFƏLƏK QALİBİ VAR!</b> 🎁\n"
+                    "━━━━━━━━━━━━━━━━━━━━\n"
+                    f"👤 <b>Qalib:</b> {user.first_name} {uname_str}\n"
+                    f"🆔 <b>Telegram ID:</b> <code>{user.id}</code>\n"
+                    f"🎁 <b>Qazandığı Hədiyyə:</b> <b>{prize_won}</b>\n"
+                    f"🕒 <b>Vaxt:</b> {now_str}\n"
+                    "━━━━━━━━━━━━━━━━━━━━\n"
+                    f"💬 <b>İstifadəçiyə yaz:</b> <a href=\"tg://user?id={user.id}\">Telegram Çatı Aç</a>"
+                )
+                try:
+                    await context.bot.send_message(
+                        chat_id=ADMIN_CHAT_ID,
+                        text=admin_alert,
+                        parse_mode='HTML'
+                    )
+                except Exception as e:
+                    print(f"Admin bildiriş xətası: {e}")
+
+        elif status == "LOSE":
+            lose_msg = (
+                "😢 <b>Təəssüf ki, bu dəfə bəxtiniz gətirmədi!</b>\n"
+                "━━━━━━━━━━━━━━━━━━━━\n"
+                "Çarx boş xanada dayandı. Hər istifadəçi üçün yalnız 1 dəfə çevirmək limiti var.\n\n"
+                "🛍️ <i>Amma ən ucuz qiymətlərlə premium hesabları və proqramları saytımızdan dərhal əldə edə bilərsiniz:</i>\n"
+                "🌐 <b>Saytımız:</b> https://ucuzhesablar.com\n"
+                "📲 <b>WhatsApp:</b> https://wa.me/994773026579"
+            )
+            await query.message.edit_text(lose_msg, parse_mode='HTML')
+        else:
+            await query.message.edit_text(
+                "⛔ <b>Siz artıq çarxı çevirmisiniz!</b> Hər istifadəçinin yalnız 1 şansı var.",
+                parse_mode='HTML'
+            )
 
 async def check_prices_for_admin(app):
     """
@@ -427,6 +607,9 @@ def run_bot(token: str):
     app.add_handler(CommandHandler("search", search_cmd))
     app.add_handler(CommandHandler("stat", stat_cmd))
     app.add_handler(CommandHandler("statistika", stat_cmd))
+    app.add_handler(CommandHandler("carx", wheel_cmd))
+    app.add_handler(CommandHandler("wheel", wheel_cmd))
+    app.add_handler(CommandHandler("qalibler", winners_cmd))
     app.add_handler(CommandHandler("alert_indi", test_alert_cmd))
     
     app.add_handler(CallbackQueryHandler(handle_callback))
@@ -436,7 +619,7 @@ def run_bot(token: str):
         asyncio.create_task(check_prices_for_admin(application))
     
     app.post_init = post_init
-    print("Telegram bot started with 23 sites and Admin Statistics panel...")
+    print("Telegram bot started with Wheel of Fortune, 23 sites, and Admin statistics...")
     app.run_polling()
 
 if __name__ == '__main__':
