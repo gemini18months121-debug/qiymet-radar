@@ -42,25 +42,17 @@ def normalize_token(w):
     return w
 
 def is_relevant_product(query, title):
-    """
-    Strict relevancy filter.
-    Extracts core keywords from query (excluding generic words like pro, key, ay).
-    Every core keyword MUST be present in the product title!
-    """
     raw_q_words = re.findall(r'[A-Za-z0-9]+', query)
     core_q = [normalize_token(w) for w in raw_q_words if w.lower() not in STOP_WORDS]
     if not core_q:
         core_q = [normalize_token(w) for w in raw_q_words]
 
     t_words = [normalize_token(w) for w in re.findall(r'[A-Za-z0-9]+', title)]
-    t_text = " ".join(t_words)
 
     for q in core_q:
-        # Check if q is a standalone token or substring in title
         if not any(q == t or q in t for t in t_words):
             return False
             
-    # Extra check for version numbers (e.g. windows 10 vs windows 11)
     if '11' in raw_q_words and '11' not in title:
         return False
     if '10' in raw_q_words and '10' not in title and '11' in title:
@@ -69,14 +61,9 @@ def is_relevant_product(query, title):
     return True
 
 def parse_duration_info(text):
-    """
-    Returns (duration_display_str, duration_in_months)
-    Used to calculate unit price per month for fair comparison.
-    """
     t = text.replace('İ', 'i').replace('I', 'ı').lower()
     
     if any(k in t for k in ['ömürlük', 'omurluk', 'limitsiz', 'lifetime', 'ömürluk']):
-        # Lifetime treated as at least 12 months for equivalent comparison
         return 'Ömürlük', 12.0
         
     m = re.search(r'(\d+)\s*(?:il|illik|year)', t)
@@ -119,12 +106,12 @@ def extract_prices(text):
             continue
     return prices
 
+# 1. ucuzhesablar.com (User's Store)
 def scrape_ucuzhesablar_com(query):
-    """Scrapes user's own store (ucuzhesablar.com)."""
     results = []
     url = "https://ucuzhesablar.com"
     try:
-        r = requests.get(url, headers=HEADERS, timeout=7)
+        r = requests.get(url, headers=HEADERS, timeout=6)
         if r.status_code == 200:
             soup = BeautifulSoup(r.text, 'html.parser')
             for item in soup.find_all(['div', 'li', 'article', 'a']):
@@ -161,11 +148,12 @@ def scrape_ucuzhesablar_com(query):
             cleaned.append(it)
     return cleaned[:3]
 
+# 2. prom.az
 def scrape_prom_az(query):
     results = []
     url = f"https://prom.az/?s={urllib.parse.quote(query)}&post_type=product"
     try:
-        r = requests.get(url, headers=HEADERS, timeout=7)
+        r = requests.get(url, headers=HEADERS, timeout=6)
         if r.status_code == 200:
             soup = BeautifulSoup(r.text, 'html.parser')
             for item in soup.select('.product'):
@@ -194,11 +182,12 @@ def scrape_prom_az(query):
         pass
     return results[:3]
 
+# 3. based.az
 def scrape_based_az(query):
     results = []
     url = f"https://based.az/?s={urllib.parse.quote(query)}"
     try:
-        r = requests.get(url, headers=HEADERS, timeout=7)
+        r = requests.get(url, headers=HEADERS, timeout=6)
         if r.status_code == 200:
             soup = BeautifulSoup(r.text, 'html.parser')
             for card in soup.find_all(['div', 'article']):
@@ -225,11 +214,12 @@ def scrape_based_az(query):
         pass
     return results[:3]
 
+# 4. appbazar.az
 def scrape_appbazar_az(query):
     results = []
     url = f"https://appbazar.az/?s={urllib.parse.quote(query)}"
     try:
-        r = requests.get(url, headers=HEADERS, timeout=7)
+        r = requests.get(url, headers=HEADERS, timeout=6)
         if r.status_code == 200:
             soup = BeautifulSoup(r.text, 'html.parser')
             for item in soup.find_all(['div', 'article', 'li']):
@@ -255,18 +245,19 @@ def scrape_appbazar_az(query):
     except Exception:
         pass
     seen = set()
-    unique = []
+    cleaned = []
     for r in results:
         if r['price'] not in seen:
             seen.add(r['price'])
-            unique.append(r)
-    return unique[:3]
+            unique.append(r) if 'unique' in locals() else cleaned.append(r)
+    return cleaned[:3]
 
+# 5. elnur.store
 def scrape_elnur_store(query):
     results = []
     url = f"https://elnur.store/search?q={urllib.parse.quote(query)}"
     try:
-        r = requests.get(url, headers=HEADERS, timeout=7)
+        r = requests.get(url, headers=HEADERS, timeout=6)
         if r.status_code == 200:
             soup = BeautifulSoup(r.text, 'html.parser')
             for item in soup.find_all(['div', 'li', 'p']):
@@ -290,11 +281,12 @@ def scrape_elnur_store(query):
         pass
     return results[:2]
 
+# 6. tenebris.az
 def scrape_tenebris_az(query):
     results = []
     url = f"https://tenebris.az/search?q={urllib.parse.quote(query)}"
     try:
-        r = requests.get(url, headers=HEADERS, timeout=7)
+        r = requests.get(url, headers=HEADERS, timeout=6)
         if r.status_code == 200:
             soup = BeautifulSoup(r.text, 'html.parser')
             for item in soup.find_all(['div', 'article', 'a']):
@@ -318,11 +310,12 @@ def scrape_tenebris_az(query):
         pass
     return results[:2]
 
+# 7. hesablar.az
 def scrape_hesablar_az(query):
     results = []
     url = f"https://hesablar.az/search?q={urllib.parse.quote(query)}"
     try:
-        r = requests.get(url, headers=HEADERS, timeout=7)
+        r = requests.get(url, headers=HEADERS, timeout=6)
         if r.status_code == 200:
             soup = BeautifulSoup(r.text, 'html.parser')
             for item in soup.find_all(['div', 'article', 'li']):
@@ -346,11 +339,12 @@ def scrape_hesablar_az(query):
         pass
     return results[:2]
 
+# 8. itemhesab.az
 def scrape_itemhesab_az(query):
     results = []
     url = f"https://www.itemhesab.az/search?s={urllib.parse.quote(query)}"
     try:
-        r = requests.get(url, headers=HEADERS, timeout=7)
+        r = requests.get(url, headers=HEADERS, timeout=6)
         if r.status_code == 200:
             soup = BeautifulSoup(r.text, 'html.parser')
             for item in soup.select('.product-miniature, .product-description, [class*="product-"]'):
@@ -378,11 +372,12 @@ def scrape_itemhesab_az(query):
         pass
     return results[:2]
 
+# 9. epin.az
 def scrape_epin_az(query):
     results = []
     url = f"https://epin.az/?s={urllib.parse.quote(query)}"
     try:
-        r = requests.get(url, headers=HEADERS, timeout=7)
+        r = requests.get(url, headers=HEADERS, timeout=6)
         if r.status_code == 200:
             soup = BeautifulSoup(r.text, 'html.parser')
             for item in soup.find_all(['div', 'li', 'a']):
@@ -406,11 +401,12 @@ def scrape_epin_az(query):
         pass
     return results[:2]
 
+# 10. dolphgame.com
 def scrape_dolphgame_com(query):
     results = []
     url = f"https://dolphgame.com/?s={urllib.parse.quote(query)}"
     try:
-        r = requests.get(url, headers=HEADERS, timeout=7)
+        r = requests.get(url, headers=HEADERS, timeout=6)
         if r.status_code == 200:
             soup = BeautifulSoup(r.text, 'html.parser')
             for item in soup.find_all(['div', 'li', 'a']):
@@ -434,11 +430,413 @@ def scrape_dolphgame_com(query):
         pass
     return results[:2]
 
+# 11. lisenziya.az
+def scrape_lisenziya_az(query):
+    results = []
+    url = f"https://lisenziya.az/?s={urllib.parse.quote(query)}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.find_all(['div', 'article', 'li']):
+                txt = item.get_text(' ', strip=True)
+                if ('₼' in txt or 'azn' in txt.lower()) and 15 < len(txt) < 160:
+                    if is_relevant_product(query, txt):
+                        prices = extract_prices(txt)
+                        if prices:
+                            link_el = item.find('a')
+                            link = link_el.get('href') if link_el else url
+                            duration_str, duration_months = parse_duration_info(txt)
+                            results.append({
+                                'site': 'lisenziya.az',
+                                'title': clean_title(txt),
+                                'duration': duration_str,
+                                'months': duration_months,
+                                'price': min(prices),
+                                'monthly_price': round(min(prices) / duration_months, 2),
+                                'url': link,
+                                'is_owner': False
+                            })
+    except Exception:
+        pass
+    return results[:2]
+
+# 12. strokt.store
+def scrape_strokt_store(query):
+    results = []
+    url = f"https://strokt.store/?s={urllib.parse.quote(query)}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.find_all(['div', 'article', 'li']):
+                txt = item.get_text(' ', strip=True)
+                if ('₼' in txt or 'azn' in txt.lower()) and 15 < len(txt) < 160:
+                    if is_relevant_product(query, txt):
+                        prices = extract_prices(txt)
+                        if prices:
+                            link_el = item.find('a')
+                            link = link_el.get('href') if link_el else url
+                            duration_str, duration_months = parse_duration_info(txt)
+                            results.append({
+                                'site': 'strokt.store',
+                                'title': clean_title(txt),
+                                'duration': duration_str,
+                                'months': duration_months,
+                                'price': min(prices),
+                                'monthly_price': round(min(prices) / duration_months, 2),
+                                'url': link,
+                                'is_owner': False
+                            })
+    except Exception:
+        pass
+    return results[:2]
+
+# 13. digitalmarket.az
+def scrape_digitalmarket_az(query):
+    results = []
+    url = f"https://digitalmarket.az/?s={urllib.parse.quote(query)}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.find_all(['div', 'article', 'li']):
+                txt = item.get_text(' ', strip=True)
+                if ('₼' in txt or 'azn' in txt.lower()) and 15 < len(txt) < 160:
+                    if is_relevant_product(query, txt):
+                        prices = extract_prices(txt)
+                        if prices:
+                            link_el = item.find('a')
+                            link = link_el.get('href') if link_el else url
+                            duration_str, duration_months = parse_duration_info(txt)
+                            results.append({
+                                'site': 'digitalmarket.az',
+                                'title': clean_title(txt),
+                                'duration': duration_str,
+                                'months': duration_months,
+                                'price': min(prices),
+                                'monthly_price': round(min(prices) / duration_months, 2),
+                                'url': link,
+                                'is_owner': False
+                            })
+    except Exception:
+        pass
+    return results[:2]
+
+# 14. ned.az
+def scrape_ned_az(query):
+    results = []
+    url = f"https://ned.az/?s={urllib.parse.quote(query)}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.find_all(['div', 'article', 'li']):
+                txt = item.get_text(' ', strip=True)
+                if ('₼' in txt or 'azn' in txt.lower()) and 15 < len(txt) < 160:
+                    if is_relevant_product(query, txt):
+                        prices = extract_prices(txt)
+                        if prices:
+                            link_el = item.find('a')
+                            link = link_el.get('href', '') if link_el else url
+                            if link and not link.startswith('http'):
+                                link = 'https://ned.az/' + link.lstrip('/')
+                            duration_str, duration_months = parse_duration_info(txt)
+                            results.append({
+                                'site': 'ned.az',
+                                'title': clean_title(txt),
+                                'duration': duration_str,
+                                'months': duration_months,
+                                'price': min(prices),
+                                'monthly_price': round(min(prices) / duration_months, 2),
+                                'url': link,
+                                'is_owner': False
+                            })
+    except Exception:
+        pass
+    return results[:2]
+
+# 15. softmir.az
+def scrape_softmir_az(query):
+    results = []
+    url = f"https://softmir.az/?s={urllib.parse.quote(query)}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.find_all(['div', 'article', 'li']):
+                txt = item.get_text(' ', strip=True)
+                if ('₼' in txt or 'azn' in txt.lower()) and 15 < len(txt) < 160:
+                    if is_relevant_product(query, txt):
+                        prices = extract_prices(txt)
+                        if prices:
+                            link_el = item.find('a')
+                            link = link_el.get('href') if link_el else url
+                            duration_str, duration_months = parse_duration_info(txt)
+                            results.append({
+                                'site': 'softmir.az',
+                                'title': clean_title(txt),
+                                'duration': duration_str,
+                                'months': duration_months,
+                                'price': min(prices),
+                                'monthly_price': round(min(prices) / duration_months, 2),
+                                'url': link,
+                                'is_owner': False
+                            })
+    except Exception:
+        pass
+    return results[:2]
+
+# 16. smartelan.biz
+def scrape_smartelan_biz(query):
+    results = []
+    url = f"https://smartelan.biz/?s={urllib.parse.quote(query)}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.find_all(['div', 'article', 'li']):
+                txt = item.get_text(' ', strip=True)
+                if ('₼' in txt or 'azn' in txt.lower()) and 15 < len(txt) < 160:
+                    if is_relevant_product(query, txt):
+                        prices = extract_prices(txt)
+                        if prices:
+                            link_el = item.find('a')
+                            link = link_el.get('href') if link_el else url
+                            duration_str, duration_months = parse_duration_info(txt)
+                            results.append({
+                                'site': 'smartelan.biz',
+                                'title': clean_title(txt),
+                                'duration': duration_str,
+                                'months': duration_months,
+                                'price': min(prices),
+                                'monthly_price': round(min(prices) / duration_months, 2),
+                                'url': link,
+                                'is_owner': False
+                            })
+    except Exception:
+        pass
+    return results[:2]
+
+# 17. igame.az
+def scrape_igame_az(query):
+    results = []
+    url = f"https://igame.az/products?q={urllib.parse.quote(query)}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.find_all(['div', 'li', 'article']):
+                txt = item.get_text(' ', strip=True)
+                if ('₼' in txt or 'azn' in txt.lower()) and 15 < len(txt) < 160:
+                    if is_relevant_product(query, txt):
+                        prices = extract_prices(txt)
+                        if prices:
+                            link_el = item.find('a')
+                            link = link_el.get('href', '') if link_el else url
+                            if link and not link.startswith('http'):
+                                link = 'https://igame.az/' + link.lstrip('/')
+                            duration_str, duration_months = parse_duration_info(txt)
+                            results.append({
+                                'site': 'igame.az',
+                                'title': clean_title(txt),
+                                'duration': duration_str,
+                                'months': duration_months,
+                                'price': min(prices),
+                                'monthly_price': round(min(prices) / duration_months, 2),
+                                'url': link,
+                                'is_owner': False
+                            })
+    except Exception:
+        pass
+    return results[:2]
+
+# 18. digibaku.com
+def scrape_digibaku_com(query):
+    results = []
+    url = "https://digibaku.com"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.find_all(['div', 'li', 'article', 'tr']):
+                txt = item.get_text(' ', strip=True)
+                if ('₼' in txt or 'azn' in txt.lower()) and 15 < len(txt) < 160:
+                    if is_relevant_product(query, txt):
+                        prices = extract_prices(txt)
+                        if prices:
+                            link_el = item.find('a')
+                            link = link_el.get('href', '') if link_el else url
+                            duration_str, duration_months = parse_duration_info(txt)
+                            results.append({
+                                'site': 'digibaku.com',
+                                'title': clean_title(txt),
+                                'duration': duration_str,
+                                'months': duration_months,
+                                'price': min(prices),
+                                'monthly_price': round(min(prices) / duration_months, 2),
+                                'url': link if link.startswith('http') else url,
+                                'is_owner': False
+                            })
+    except Exception:
+        pass
+    return results[:2]
+
+# 19. keyses.az
+def scrape_keyses_az(query):
+    results = []
+    url = "https://keyses.az"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.find_all(['div', 'li', 'article', 'tr']):
+                txt = item.get_text(' ', strip=True)
+                if ('₼' in txt or 'azn' in txt.lower()) and 15 < len(txt) < 160:
+                    if is_relevant_product(query, txt):
+                        prices = extract_prices(txt)
+                        if prices:
+                            duration_str, duration_months = parse_duration_info(txt)
+                            results.append({
+                                'site': 'keyses.az',
+                                'title': clean_title(txt),
+                                'duration': duration_str,
+                                'months': duration_months,
+                                'price': min(prices),
+                                'monthly_price': round(min(prices) / duration_months, 2),
+                                'url': url,
+                                'is_owner': False
+                            })
+    except Exception:
+        pass
+    return results[:2]
+
+# 20. lowiz.store
+def scrape_lowiz_store(query):
+    results = []
+    url = "https://lowiz.store"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.find_all(['div', 'li', 'article']):
+                txt = item.get_text(' ', strip=True)
+                if ('₼' in txt or 'azn' in txt.lower()) and 15 < len(txt) < 160:
+                    if is_relevant_product(query, txt):
+                        prices = extract_prices(txt)
+                        if prices:
+                            duration_str, duration_months = parse_duration_info(txt)
+                            results.append({
+                                'site': 'lowiz.store',
+                                'title': clean_title(txt),
+                                'duration': duration_str,
+                                'months': duration_months,
+                                'price': min(prices),
+                                'monthly_price': round(min(prices) / duration_months, 2),
+                                'url': url,
+                                'is_owner': False
+                            })
+    except Exception:
+        pass
+    return results[:2]
+
+# 21. wepay.az
+def scrape_wepay_az(query):
+    results = []
+    url = "https://wepay.az/catalog"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.find_all(['div', 'li', 'article', 'a']):
+                txt = item.get_text(' ', strip=True)
+                if ('₼' in txt or 'azn' in txt.lower()) and 15 < len(txt) < 160:
+                    if is_relevant_product(query, txt):
+                        prices = extract_prices(txt)
+                        if prices:
+                            link_el = item if item.name == 'a' else item.find('a')
+                            link = link_el.get('href', '') if link_el else url
+                            if link and not link.startswith('http'):
+                                link = 'https://wepay.az/' + link.lstrip('/')
+                            duration_str, duration_months = parse_duration_info(txt)
+                            results.append({
+                                'site': 'wepay.az',
+                                'title': clean_title(txt),
+                                'duration': duration_str,
+                                'months': duration_months,
+                                'price': min(prices),
+                                'monthly_price': round(min(prices) / duration_months, 2),
+                                'url': link,
+                                'is_owner': False
+                            })
+    except Exception:
+        pass
+    return results[:2]
+
+# 22. hesablar.net
+def scrape_hesablar_net(query):
+    results = []
+    url = f"https://hesablar.net/?s={urllib.parse.quote(query)}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.find_all(['div', 'article', 'li']):
+                txt = item.get_text(' ', strip=True)
+                if ('₼' in txt or 'azn' in txt.lower()) and 15 < len(txt) < 160:
+                    if is_relevant_product(query, txt):
+                        prices = extract_prices(txt)
+                        if prices:
+                            link_el = item.find('a')
+                            link = link_el.get('href') if link_el else url
+                            duration_str, duration_months = parse_duration_info(txt)
+                            results.append({
+                                'site': 'hesablar.net',
+                                'title': clean_title(txt),
+                                'duration': duration_str,
+                                'months': duration_months,
+                                'price': min(prices),
+                                'monthly_price': round(min(prices) / duration_months, 2),
+                                'url': link,
+                                'is_owner': False
+                            })
+    except Exception:
+        pass
+    return results[:2]
+
+# 23. mirpanel.com
+def scrape_mirpanel_com(query):
+    results = []
+    url = f"https://mirpanel.com/?search={urllib.parse.quote(query)}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.find_all(['div', 'tr', 'li']):
+                txt = item.get_text(' ', strip=True)
+                if ('₼' in txt or 'azn' in txt.lower()) and 15 < len(txt) < 160:
+                    if is_relevant_product(query, txt):
+                        prices = extract_prices(txt)
+                        if prices:
+                            duration_str, duration_months = parse_duration_info(txt)
+                            results.append({
+                                'site': 'mirpanel.com',
+                                'title': clean_title(txt),
+                                'duration': duration_str,
+                                'months': duration_months,
+                                'price': min(prices),
+                                'monthly_price': round(min(prices) / duration_months, 2),
+                                'url': url,
+                                'is_owner': False
+                            })
+    except Exception:
+        pass
+    return results[:2]
+
 def search_all_sites(query):
     """
-    Scrapes all 10 sites concurrently.
-    Sorts by monthly_price (unit value per month) to fairly compare:
-    e.g. 4 months for 6.20 AZN (1.55 AZN/month) beats 1 month for 5.99 AZN (5.99 AZN/month).
+    Scrapes all 23 platforms concurrently.
+    Sorts by monthly_price (aylıq maya dəyəri) ascending to fairly compare durations.
     """
     scrapers = [
         scrape_ucuzhesablar_com,
@@ -450,11 +848,24 @@ def search_all_sites(query):
         scrape_hesablar_az,
         scrape_itemhesab_az,
         scrape_epin_az,
-        scrape_dolphgame_com
+        scrape_dolphgame_com,
+        scrape_lisenziya_az,
+        scrape_strokt_store,
+        scrape_digitalmarket_az,
+        scrape_ned_az,
+        scrape_softmir_az,
+        scrape_smartelan_biz,
+        scrape_igame_az,
+        scrape_digibaku_com,
+        scrape_keyses_az,
+        scrape_lowiz_store,
+        scrape_wepay_az,
+        scrape_hesablar_net,
+        scrape_mirpanel_com
     ]
     
     all_results = []
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=20) as executor:
         futures = [executor.submit(fn, query) for fn in scrapers]
         for f in as_completed(futures):
             try:
@@ -474,13 +885,11 @@ def search_all_sites(query):
             seen.add(key)
             cleaned.append(item)
 
-    # Sort primarily by monthly_price (aylıq vahid qiymət), secondarily by total price
     cleaned.sort(key=lambda x: (x['monthly_price'], x['price']))
     
     lowest_monthly = cleaned[0]['monthly_price'] if cleaned else None
     cheapest_item = cleaned[0] if cleaned else None
     
-    # Check user's own store status
     owner_items = [i for i in cleaned if i.get('is_owner')]
     owner_best = owner_items[0] if owner_items else None
     owner_product_url = owner_best['url'] if owner_best else "https://ucuzhesablar.com"
@@ -505,11 +914,11 @@ def search_all_sites(query):
     }
 
 if __name__ == '__main__':
-    for test_q in ["canva pro", "spotify", "windows 11", "capcut pro"]:
-        res = search_all_sites(test_q)
-        print(f"\n=== Axtarış: {test_q} (Tapıldı: {res['total_found']}) ===")
-        print(f"Lider: {res['cheapest_site']} (Aylıq: {res['lowest_monthly']} ₼)")
-        print(f"Ucuzhesablar link: {res['owner_product_url']}")
-        for it in res['items'][:4]:
-            tag = " [👑 BİZİM]" if it['is_owner'] else ""
-            print(f"  {it['site']}{tag} | {it['duration']} | Cəmi: {it['price']} ₼ (Aylıq: {it['monthly_price']} ₼) -> {it['title']}")
+    import time
+    t0 = time.time()
+    res = search_all_sites("windows 11")
+    print(f"Time: {time.time() - t0:.2f}s | Total found across 23 sites: {res['total_found']}")
+    print(f"Lider: {res['cheapest_site']} (Aylıq: {res['lowest_monthly']} ₼)")
+    for it in res['items'][:5]:
+        tag = " [👑 BİZİM]" if it['is_owner'] else ""
+        print(f"  {it['site']}{tag} | {it['duration']} | Cəmi: {it['price']} ₼ -> {it['title']}")

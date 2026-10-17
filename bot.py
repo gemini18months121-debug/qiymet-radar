@@ -6,6 +6,7 @@ import logging
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 from scraper import search_all_sites
+from database import init_db, log_user_activity, get_statistics
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -14,11 +15,18 @@ logging.basicConfig(
 
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "8495554960")
 
-KEYBOARD = [
+USER_KEYBOARD = [
     ["🎬 Capcut Pro", "🪟 Windows 11 Pro"],
     ["🎨 Canva Pro", "💼 Microsoft 365"],
     ["🎵 Spotify", "🍿 Netflix 4K"],
     ["👑 Ucuzhesablar.com", "❓ Kömək"]
+]
+
+ADMIN_KEYBOARD = [
+    ["🎬 Capcut Pro", "🪟 Windows 11 Pro"],
+    ["🎨 Canva Pro", "💼 Microsoft 365"],
+    ["🎵 Spotify", "🍿 Netflix 4K"],
+    ["📊 Statistika Paneli", "👑 Ucuzhesablar.com"]
 ]
 
 TRACKED_PRODUCTS = [
@@ -39,17 +47,62 @@ def generate_ad_text(product_name, duration, price, monthly_price):
         f"💰 <b>QİYMƏT:</b> <code>{price:.2f} AZN</code>{monthly_note}\n\n"
         f"✅ 100% Rəsmi və Zəmanətli çıxış\n"
         f"✅ Ani və avtomatik çatdırılma\n"
-        f"🚀 Bütün digər mağazalardan daha sərfəli!\n\n"
+        f"🚀 Bütün digər 22 mağazadan daha sərfəli!\n\n"
         f"🌐 <b>Saytımızdan birbaşa sifariş:</b> https://ucuzhesablar.com\n"
         f"📲 <b>WhatsApp ilə sifariş:</b> https://wa.me/994773026579"
     )
 
+def build_stats_message():
+    stats = get_statistics()
+    baku_tz = datetime.timezone(datetime.timedelta(hours=4))
+    now = datetime.datetime.now(baku_tz).strftime('%H:%M:%S • %d.%m.%Y')
+
+    top_text = ""
+    if stats['top_searches']:
+        for i, (q, count) in enumerate(stats['top_searches'], 1):
+            top_text += f"   {i}. <b>{q.capitalize()}</b> — <code>{count} dəfə</code>\n"
+    else:
+        top_text = "   <i>Hələ axtarış qeydə alınmayıb</i>\n"
+
+    recent_text = ""
+    if stats['recent_users']:
+        for u in stats['recent_users']:
+            uid, uname, fname, lseen = u
+            name_display = fname or uname or f"İstifadəçi {uid}"
+            uname_display = f"(@{uname})" if uname else ""
+            recent_text += f"   • <b>{name_display}</b> {uname_display}\n"
+    else:
+        recent_text = "   <i>İstifadəçi tapılmadı</i>\n"
+
+    msg = (
+        "📊 <b>QIYMƏT RADAR — STATİSTİKA PANELİ</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        f"👥 <b>Toplam İstifadəçi:</b> <code>{stats['total_users']} nəfər</code>\n"
+        f"🟢 <b>Hal-hazırda Aktiv (Online):</b> <code>{stats['online_users']} nəfər</code> <i>(son 15 dəqiqə)</i>\n"
+        f"⚡ <b>Son 24 saatda Aktiv:</b> <code>{stats['active_24h']} nəfər</code>\n"
+        f"🔍 <b>Toplam Axtarış Sayı:</b> <code>{stats['total_searches']} dəfə</code>\n\n"
+        "📈 <b>Ən Çox Axtarılan Məhsullar (Top 5):</b>\n"
+        f"{top_text}\n"
+        "👤 <b>Son Aktiv İstifadəçilər:</b>\n"
+        f"{recent_text}"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        f"🕒 <i>Yenilənmə: {now} (Bakı vaxtı)</i>"
+    )
+    return msg
+
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_markup = ReplyKeyboardMarkup(KEYBOARD, resize_keyboard=True)
+    user = update.effective_user
+    log_user_activity(user.id, user.username, user.first_name)
+
+    is_admin = (str(user.id) == str(ADMIN_CHAT_ID))
+    kb = ADMIN_KEYBOARD if is_admin else USER_KEYBOARD
+    reply_markup = ReplyKeyboardMarkup(kb, resize_keyboard=True)
+
     msg = (
         "👋 <b>Salam! Qiymət Radar Botuna xoş gəlmisiniz.</b>\n\n"
-        "👑 <b>Ucuzhesablar.com</b> və digər 9 Azərbaycan rəqəmsal satış mağazasını "
-        "eyni anda analiz edib <b>aylıq və ümumi ən sərfəli qiyməti</b> tapıram.\n\n"
+        "👑 <b>Ucuzhesablar.com</b> və Azərbaycanın <b>22 əsas rəqəmsal satış saytını</b> "
+        "(based, prom, elnur, itemhesab, lisenziya, digibaku, igame, strokt, wepay, smartelan və s.) "
+        "eyni anda analiz edib <b>ən sərfəli qiyməti</b> tapıram.\n\n"
         "🔍 <b>Axtarış üçün:</b>\n"
         "• Sadəcə məhsulun adını yazın (məs: <code>Capcut</code>, <code>Spotify</code>, <code>Canva</code>)\n"
         "• Və ya <code>/search &lt;məhsul&gt;</code> əmrindən istifadə edin.\n\n"
@@ -58,10 +111,12 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=reply_markup)
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    log_user_activity(user.id, user.username, user.first_name)
     text = (
         "ℹ️ <b>Botdan İstifadə Qaydaları:</b>\n\n"
-        "1. <b>Dəqiq Axtarış:</b> <code>/search Canva Pro</code> və ya birbaşa məhsul adını yazın. Bot yalnız axtarılan məhsulu tapır və digər proqramlarla qarışdırmır.\n"
-        "2. <b>Ədalətli Qiymət Analizi:</b> Bot tək məbləğə baxmır, ayların fərqini də hesablayır (Məsələn: 4 ay 6.20 ₼ verən təklif, 1 ay 4.99 ₼ verəndən daha sərfəli çıxır, çünki aylıq cəmi 1.55 ₼ edir!).\n"
+        "1. <b>23 Saytda Axtarış:</b> <code>/search Canva Pro</code> və ya birbaşa məhsul adını yazın. Bot bütün 23 mağazada anında axtarış aparır.\n"
+        "2. <b>Ağıllı Aylıq Müqayisə:</b> Tək məbləğə görə deyil, aylıq maya dəyərinə görə ən sərfəli təklif önə çıxarılır.\n"
         "3. <b>Birbaşa Keçid:</b> Nəticənin altındakı düymə sizi birbaşa həmin məhsulun Ucuzhesablar.com-dakı səhifəsinə aparır."
     )
     await update.message.reply_text(text, parse_mode='HTML')
@@ -74,6 +129,18 @@ async def website_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "⚡ Bütün premium proqramlar, lisenziyalar və oyun hesabları ən sərfəli qiymətlərlə!"
     )
     await update.message.reply_text(text, parse_mode='HTML')
+
+async def stat_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+    if user_id != str(ADMIN_CHAT_ID):
+        await update.message.reply_text("⛔ Bu panel yalnız Admin üçündür.")
+        return
+
+    msg = build_stats_message()
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔄 Məlumatları Yenilə", callback_data="refresh_stats")]
+    ])
+    await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
 
 async def search_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = " ".join(context.args).strip() if context.args else ""
@@ -88,12 +155,16 @@ async def search_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     raw_text = update.message.text.strip()
+    user = update.effective_user
     
     if raw_text == "❓ Kömək":
         await help_cmd(update, context)
         return
     elif raw_text == "👑 Ucuzhesablar.com":
         await website_cmd(update, context)
+        return
+    elif raw_text == "📊 Statistika Paneli":
+        await stat_cmd(update, context)
         return
 
     # Clean emojis (e.g. "🎬 Capcut Pro" -> "Capcut Pro")
@@ -104,8 +175,11 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await execute_search(update, clean_query)
 
 async def execute_search(update: Update, query: str):
+    user = update.effective_user
+    log_user_activity(user.id, user.username, user.first_name, query)
+
     wait_msg = await update.message.reply_text(
-        f"🔍 <b>«{query}»</b> üzrə 10 mağazada dəqiq axtarış edilir...\n<i>Zəhmət olmasa gözləyin (1-3 saniyə)...</i>",
+        f"🔍 <b>«{query}»</b> üzrə 23 mağazada dəqiq axtarış edilir...\n<i>Zəhmət olmasa gözləyin (2-4 saniyə)...</i>",
         parse_mode='HTML'
     )
 
@@ -113,7 +187,7 @@ async def execute_search(update: Update, query: str):
         data = search_all_sites(query)
         if not data['items']:
             await wait_msg.edit_text(
-                f"❌ <b>«{query}»</b> üzrə mağazalarda dəqiq uyğun gələn elan tapılmadı.\nZəhmət olmasa adı dəqiqləşdirib təkrar yazın.",
+                f"❌ <b>«{query}»</b> üzrə 23 mağazada heç bir elan tapılmadı.\nZəhmət olmasa adı dəqiqləşdirib təkrar yazın.",
                 parse_mode='HTML'
             )
             return
@@ -128,16 +202,14 @@ async def execute_search(update: Update, query: str):
             "━━━━━━━━━━━━━━━━━━━━"
         ]
 
-        # Smart banner explaining who is truly cheaper taking duration into account
         if is_owner_cheapest and owner_best:
             lines.append(f"👑 <b>ƏN SƏRFƏLİ BİZDƏDİR (ucuzhesablar.com)!</b> 🥇")
             if owner_best['duration'] != "1 Ay":
                 lines.append(f"💡 Bizdə <b>{owner_best['duration']}</b> cəmi <code>{owner_best['price']:.2f} AZN</code> (Aylıq: <b>{owner_best['monthly_price']:.2f} ₼</b>)!")
-                # show competitor comparison
                 comp_items = [it for it in data['items'] if not it.get('is_owner')]
                 if comp_items:
                     comp = comp_items[0]
-                    lines.append(f"<i>(Rəqibdə {comp['site']}: {comp['duration']} üçün {comp['price']:.2f} ₼, yəni aylıq {comp['monthly_price']:.2f} ₼!)</i>")
+                    lines.append(f"<i>(Rəqibdə {comp['site']}: {comp['duration']} üçün {comp['price']:.2f} ₼, yəni aylıq {comp['monthly_price']:.2f} ₼)</i>")
             else:
                 lines.append(f"💰 Bizim qiymət: <code>{owner_best['price']:.2f} AZN</code> ({owner_best['duration']})")
         else:
@@ -146,14 +218,13 @@ async def execute_search(update: Update, query: str):
             if owner_best:
                 lines.append(f"👑 Bizim qiymət: <code>{owner_best['price']:.2f} AZN</code> ({owner_best['duration']} — aylıq {owner_best['monthly_price']:.2f} ₼)")
 
-        lines.append("━━━━━━━━━━━━━━━━━━━━\n📊 <b>Tapılan Dəqiq Elanlar (Aylıq Sərfəlilik Sırası ilə):</b>\n")
+        lines.append(f"━━━━━━━━━━━━━━━━━━━━\n📊 <b>Tapılan Dəqiq Elanlar ({data['total_found']} nəticə / 23 sayt):</b>\n")
 
         for i, item in enumerate(data['items'][:8], 1):
             is_owner = item.get('is_owner', False)
             site_tag = "👑 <b>ucuzhesablar.com (Bizim Sayt)</b>" if is_owner else f"🏬 <b>{item['site']}</b>"
             top_badge = " 🥇 (Ən Sərfəli)" if i == 1 else ""
 
-            # Show unit price per month if duration is more than 1 month
             unit_note = ""
             if item['duration'] not in ["1 Ay"]:
                 unit_note = f" <i>(Aylıq: {item['monthly_price']:.2f} ₼)</i>"
@@ -167,15 +238,13 @@ async def execute_search(update: Update, query: str):
             )
 
         lines.append("━━━━━━━━━━━━━━━━━━━━")
-        lines.append("⚡ <i>Ucuzhesablar.com • Real Qiymət Analizi</i>")
+        lines.append("⚡ <i>Ucuzhesablar.com • 23 Sayt Üzrə Radar</i>")
 
-        # Buttons logic:
-        # 1. Direct link to THAT SPECIFIC PRODUCT on ucuzhesablar.com!
         inline_buttons = [
             [InlineKeyboardButton("🛍️ Məhsulu Sifariş Et (Ucuzhesablar.com)", url=owner_url)]
         ]
 
-        # 2. "Hazır Satış Mətni" button ONLY FOR ADMIN!
+        # "Hazır Satış Mətni" button ONLY FOR ADMIN!
         user_id = str(update.effective_user.id)
         if user_id == str(ADMIN_CHAT_ID):
             ad_target = owner_best if owner_best else cheapest_item
@@ -200,15 +269,27 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    # Double check admin permission
     user_id = str(update.effective_user.id)
-    if user_id != str(ADMIN_CHAT_ID):
-        await query.message.reply_text("⛔ Bu funksiya yalnız Admin üçündür.")
+
+    # Refresh statistics callback
+    if query.data == "refresh_stats":
+        if user_id != str(ADMIN_CHAT_ID):
+            await query.message.reply_text("⛔ Bu panel yalnız Admin üçündür.")
+            return
+        msg = build_stats_message()
+        kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🔄 Məlumatları Yenilə", callback_data="refresh_stats")]
+        ])
+        await query.message.edit_text(msg, parse_mode='HTML', reply_markup=kb)
         return
 
-    data = query.data
-    if data.startswith("ad:"):
-        parts = data.split(":")
+    # Ad text callback (Admin only)
+    if query.data.startswith("ad:"):
+        if user_id != str(ADMIN_CHAT_ID):
+            await query.message.reply_text("⛔ Bu funksiya yalnız Admin üçündür.")
+            return
+
+        parts = query.data.split(":")
         prod_name = parts[1]
         duration = parts[2]
         price = float(parts[3])
@@ -240,9 +321,9 @@ async def check_prices_for_admin(app):
                 print(f"⏰ [Baku Time {now.strftime('%H:%M')}] Admin üçün avtomatik qiymət yoxlanışı icra olunur...")
 
                 report_lines = [
-                    f"🔔 <b>[{now.strftime('%H:%M')}] Avtomatik Rəqib Nəzarət Hesabatı</b>",
+                    f"🔔 <b>[{now.strftime('%H:%M')}] 23 Mağaza Üzrə Rəqib Nəzarət Hesabatı</b>",
                     "━━━━━━━━━━━━━━━━━━━━",
-                    "<i>(Yalnız Admin üçün göndərilən gündəlik qiymət analizi)</i>\n"
+                    "<i>(Yalnız Admin üçün gündəlik bazar analizi)</i>\n"
                 ]
 
                 for prod in TRACKED_PRODUCTS:
@@ -289,19 +370,18 @@ async def check_prices_for_admin(app):
         await asyncio.sleep(45)
 
 async def test_alert_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Admin-only manual trigger for the price check report."""
     user_id = str(update.effective_user.id)
     if user_id != str(ADMIN_CHAT_ID):
         await update.message.reply_text("⛔ Bu əmr yalnız Admin üçündür.")
         return
 
-    wait_msg = await update.message.reply_text("⏳ <b>Admin Hesabatı hazırlanır...</b> Bütün məhsullar yoxlanılır...", parse_mode='HTML')
+    wait_msg = await update.message.reply_text("⏳ <b>Admin Hesabatı hazırlanır...</b> 23 mağazada axtarış gedir...", parse_mode='HTML')
     
     baku_tz = datetime.timezone(datetime.timedelta(hours=4))
     now = datetime.datetime.now(baku_tz)
 
     report_lines = [
-        f"🔔 <b>[{now.strftime('%H:%M')}] Canlı Rəqib Nəzarət Hesabatı</b>",
+        f"🔔 <b>[{now.strftime('%H:%M')}] Canlı Rəqib Nəzarət Hesabatı (23 Mağaza)</b>",
         "━━━━━━━━━━━━━━━━━━━━",
         "<i>(Yalnız Admin üçün)</i>\n"
     ]
@@ -338,12 +418,15 @@ async def test_alert_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await wait_msg.edit_text("\n".join(report_lines), parse_mode='HTML', disable_web_page_preview=True)
 
 def run_bot(token: str):
+    init_db()
     app = ApplicationBuilder().token(token).build()
     
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("website", website_cmd))
     app.add_handler(CommandHandler("search", search_cmd))
+    app.add_handler(CommandHandler("stat", stat_cmd))
+    app.add_handler(CommandHandler("statistika", stat_cmd))
     app.add_handler(CommandHandler("alert_indi", test_alert_cmd))
     
     app.add_handler(CallbackQueryHandler(handle_callback))
@@ -353,7 +436,7 @@ def run_bot(token: str):
         asyncio.create_task(check_prices_for_admin(application))
     
     app.post_init = post_init
-    print("Telegram bot started with upgraded logic and admin-only features...")
+    print("Telegram bot started with 23 sites and Admin Statistics panel...")
     app.run_polling()
 
 if __name__ == '__main__':
