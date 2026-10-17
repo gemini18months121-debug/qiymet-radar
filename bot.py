@@ -185,7 +185,7 @@ async def wheel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🏆 <b>Mövcud Hədiyyələr (Toplam 5 Ədəd):</b>\n"
         f"{stock_lines}\n"
         "🎯 <b>Şərtlər:</b>\n"
-        "• Çarxın <b>20 gözü</b> var.\n"
+        "• Çarxın <b>30 xanası (gözü)</b> var.\n"
         "• Hər istifadəçinin <b>yalnız 1 dəfə</b> çevirmək haqqı var (Telegram ID ilə qeydə alınır).\n\n"
         "👇 <i>Şansınızı yoxlamaq üçün aşağıdakı düyməyə basın:</i>"
     )

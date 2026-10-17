@@ -156,7 +156,7 @@ def get_wheel_stock_info():
 def spin_wheel(user_id: int, username: str, first_name: str):
     """
     Executes a spin for the user.
-    Total slots: 20.
+    Total slots: 30.
     Prizes in slots based on remaining stock.
     Returns:
       (status: 'ALREADY_SPUN' | 'WIN' | 'LOSE', prize_name: str or None)
@@ -175,7 +175,7 @@ def spin_wheel(user_id: int, username: str, first_name: str):
     cur.execute("SELECT name, remaining_stock FROM wheel_prizes WHERE remaining_stock > 0")
     available_prizes = cur.fetchall()
 
-    # Construct the 20-slot wheel
+    # Construct the 30-slot wheel
     # Available prize slots:
     slots = []
     for name, rem in available_prizes:
@@ -185,8 +185,8 @@ def spin_wheel(user_id: int, username: str, first_name: str):
     # Cap slots to max 5 prize slots
     slots = slots[:5]
     
-    # Fill remaining slots up to 20 with 'BOŞ'
-    empty_slots_count = 20 - len(slots)
+    # Fill remaining slots up to 30 with 'BOŞ'
+    empty_slots_count = 30 - len(slots)
     slots.extend(["BOŞ"] * empty_slots_count)
 
     # Pick random slot
