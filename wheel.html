@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🎡 Çarxıfələk — Ucuzhesablar.com</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at top, #1e1b4b 0%, #09090b 100%);
+      color: #fff;
+      touch-action: manipulation;
+    }
+    .wheel-container {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      margin: 0 auto;
+    }
+    .wheel-pointer {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 28px;
+      height: 34px;
+      z-index: 20;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6));
+    }
+    .glow-gold {
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.4);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-4 select-none pb-8">
+
+  <!-- HEADER -->
+  <div class="w-full max-w-sm text-center pt-2">
+    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold mb-2">
+      <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+      265 Xanalı Böyük Kampaniya
+    </div>
+    <h1 class="text-2xl font-black tracking-tight text-white">🎡 Çarxıfələk</h1>
+    <p class="text-xs text-slate-400 mt-0.5">Toplam 65 uduşlu endirimli hesab şansı!</p>
+    
+    <!-- User Badge & Device Security Status -->
+    <div class="mt-2.5 flex items-center justify-center gap-2 text-[11px] text-slate-300 bg-slate-900/80 border border-slate-800 rounded-xl py-1.5 px-3">
+      <span id="userInfo">👤 Yüklənir...</span>
+      <span class="text-slate-600">•</span>
+      <span class="text-emerald-400 flex items-center gap-1">
+        <svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        Cihaz Qorunması Aktiv
+      </span>
+    </div>
+  </div>
+
+  <!-- WHEEL SECTION -->
+  <div class="my-auto flex flex-col items-center py-2">
+    <div class="wheel-container">
+      <!-- Top Pointer -->
+      <div class="wheel-pointer">
+        <svg viewBox="0 0 24 28" fill="none">
+          <path d="M12 28L0 6C0 2.68629 2.68629 0 6 0H18C21.3137 0 24 2.68629 24 6L12 28Z" fill="#F59E0B"/>
+          <path d="M12 24L3 6H21L12 24Z" fill="#EF4444"/>
+        </svg>
+      </div>
+      <!-- Canvas -->
+      <canvas id="wheelCanvas" width="640" height="640" class="w-full h-full rounded-full border-4 border-amber-500/60 glow-gold transition-transform duration-75"></canvas>
+    </div>
+
+    <!-- Spin Button -->
+    <button id="spinBtn" onclick="startSpin()" class="mt-6 w-full max-w-xs bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-base py-3.5 px-6 rounded-2xl shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2 transform active:scale-95 transition">
+      <span>🎰 ÇARXI FIRLAT (1 ŞANS)</span>
+    </button>
+    <p id="statusNote" class="text-[11px] text-slate-500 mt-2 text-center max-w-xs">Hər cihazdan və Telegram hesabından yalnız 1 dəfə istifadə oluna bilər.</p>
+  </div>
+
+  <!-- PRIZE LIST ACCORDION / FOOTER -->
+  <div class="w-full max-w-sm bg-slate-900/70 border border-slate-800 rounded-2xl p-3 text-xs">
+    <div class="flex items-center justify-between text-slate-300 font-bold mb-1.5">
+      <span>🎁 Uduşlu Hədiyyələr (Toplam 65 ədəd):</span>
+      <span class="text-amber-400 font-extrabold text-[11px]">265 Xana</span>
+    </div>
+    <div class="grid grid-cols-2 gap-1.5 text-[11px] text-slate-400">
+      <div class="bg-slate-800/50 p-1.5 rounded-lg border border-slate-700/50">• <b>Gemini Pro:</b> 2.50 ₼ (20 ədəd)</div>
+      <div class="bg-slate-800/50 p-1.5 rounded-lg border border-slate-700/50">• <b>Spotify:</b> 2.30 ₼ (10 ədəd)</div>
+      <div class="bg-slate-800/50 p-1.5 rounded-lg border border-slate-700/50">• <b>Youtube:</b> 2.46 ₼ (10 ədəd)</div>
+      <div class="bg-slate-800/50 p-1.5 rounded-lg border border-slate-700/50">• <b>Capcut Pro:</b> 3.00 ₼ (10 ədəd)</div>
+      <div class="bg-slate-800/50 p-1.5 rounded-lg border border-slate-700/50">• <b>Capcut 1600:</b> 3.80 ₼ (10 ədəd)</div>
+      <div class="bg-slate-800/50 p-1.5 rounded-lg border border-slate-700/50">• <b>Netflix 1 Ay:</b> 2.30 ₼ (5 ədəd)</div>
+    </div>
+    <div class="mt-2 text-center">
+      <a href="/static/game.html" class="inline-flex items-center gap-1 text-[11px] text-indigo-400 font-bold hover:underline">
+        🎮 Xal toplayıb 100% zəmanətli endirim qazanmaq istəyirsən? Oyuna Keç →
+      </a>
+    </div>
+  </div>
+
+  <!-- RESULT MODAL -->
+  <div id="resultModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl relative">
+      <div id="modalIcon" class="text-5xl mb-2">🎉</div>
+      <h2 id="modalTitle" class="text-xl font-black text-white">TƏBRİKLƏR!</h2>
+      <p id="modalDesc" class="text-sm text-slate-300 mt-2 leading-relaxed">Qazandığınız hədiyyə təyin edilir...</p>
+      
+      <div id="modalAction" class="mt-5 flex flex-col gap-2">
+        <a id="claimBtn" href="#" target="_blank" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold py-3 rounded-xl transition flex items-center justify-center gap-2">
+          📲 Hədiyyəni Adminə Bildir (WhatsApp)
+        </a>
+        <button onclick="closeModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl text-xs font-semibold">
+          Bağla
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Audio synthesis for click sound
+    let audioCtx = null;
+    function playClickSound() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.04);
+      } catch(e) {}
+    }
+
+    function playWinSound() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const notes = [440, 554, 659, 880];
+        notes.forEach((freq, i) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.12);
+          gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.12 + 0.25);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime + i * 0.12);
+          osc.stop(audioCtx.currentTime + i * 0.12 + 0.25);
+        });
+      } catch(e) {}
+    }
+
+    // Telegram WebApp setup
+    let tgUser = { id: 0, first_name: 'İstifadəçi', username: '' };
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+      const initData = window.Telegram.WebApp.initDataUnsafe;
+      if (initData && initData.user) {
+        tgUser = initData.user;
+      }
+    }
+    
+    // Fallback if opened in regular browser
+    if (!tgUser.id) {
+      let savedId = localStorage.getItem('demo_tg_user_id');
+      if (!savedId) {
+        savedId = Math.floor(100000000 + Math.random() * 900000000);
+        localStorage.setItem('demo_tg_user_id', savedId);
+      }
+      tgUser.id = parseInt(savedId);
+      tgUser.first_name = 'Qonaq';
+    }
+
+    document.getElementById('userInfo').textContent = `👤 ${tgUser.first_name} (ID: ${tgUser.id})`;
+
+    // Generate Persistent Device Fingerprint
+    function getDeviceFingerprint() {
+      let devUuid = localStorage.getItem('ucuzhesablar_device_uuid');
+      if (!devUuid) {
+        devUuid = 'dev_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+        localStorage.setItem('ucuzhesablar_device_uuid', devUuid);
+      }
+      // Mix with hardware hints
+      const screenSign = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'AZ';
+      const navSign = `${navigator.hardwareConcurrency || 4}_${navigator.platform || 'web'}`;
+      return `${devUuid}_${screenSign.replace(/x/g,'')}_${tz.replace(/\//g,'')}`;
+    }
+    const deviceId = getDeviceFingerprint();
+
+    // Wheel Canvas Drawing
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const segments = [
+      { text: "Gemini 2.50₼", color: "#4F46E5", win: true },
+      { text: "BOŞ", color: "#1E293B", win: false },
+      { text: "Spotify 2.30₼", color: "#10B981", win: true },
+      { text: "BOŞ", color: "#0F172A", win: false },
+      { text: "Youtube 2.46₼", color: "#EF4444", win: true },
+      { text: "BOŞ", color: "#1E293B", win: false },
+      { text: "Netflix 2.30₼", color: "#E11D48", win: true },
+      { text: "BOŞ", color: "#0F172A", win: false },
+      { text: "Capcut 3.00₼", color: "#06B6D4", win: true },
+      { text: "BOŞ", color: "#1E293B", win: false },
+      { text: "Capcut 1600", color: "#8B5CF6", win: true },
+      { text: "BOŞ", color: "#0F172A", win: false }
+    ];
+
+    const numSegments = segments.length;
+    const arc = (2 * Math.PI) / numSegments;
+    let currentAngle = 0;
+    let isSpinning = false;
+
+    function drawWheel() {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = canvas.width / 2 - 20;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < numSegments; i++) {
+        const angle = currentAngle + i * arc;
+        ctx.beginPath();
+        ctx.fillStyle = segments[i].color;
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, angle, angle + arc);
+        ctx.lineTo(centerX, centerY);
+        ctx.fill();
+        ctx.strokeStyle = '#F59E0B';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Text
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle + arc / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = segments[i].win ? '#FFFFFF' : '#94A3B8';
+        ctx.font = segments[i].win ? 'bold 24px Plus Jakarta Sans' : '20px Plus Jakarta Sans';
+        ctx.fillText(segments[i].text, radius - 30, 8);
+        ctx.restore();
+      }
+
+      // Center Hub
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 55, 0, 2 * Math.PI);
+      ctx.fillStyle = '#0F172A';
+      ctx.fill();
+      ctx.strokeStyle = '#F59E0B';
+      ctx.lineWidth = 8;
+      ctx.stroke();
+
+      ctx.fillStyle = '#F59E0B';
+      ctx.font = 'bold 22px Plus Jakarta Sans';
+      ctx.textAlign = 'center';
+      ctx.fillText("265 Xana", centerX, centerY + 8);
+    }
+
+    drawWheel();
+
+    // Check user & device status on load
+    fetch(`/api/wheel/status?user_id=${tgUser.id}&device_id=${encodeURIComponent(deviceId)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.has_spun) {
+          const spinBtn = document.getElementById('spinBtn');
+          spinBtn.disabled = true;
+          spinBtn.classList.remove('bg-gradient-to-r', 'from-amber-500', 'hover:from-amber-400');
+          spinBtn.classList.add('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
+          spinBtn.innerHTML = '<span>⛔ ARTIQ İSTİFADƏ OLUNUB</span>';
+          document.getElementById('statusNote').innerHTML = `<span class="text-amber-400 font-semibold">${data.message || 'Siz artıq çarxı çevirmisiniz.'}</span>`;
+        }
+      }).catch(e => console.log('Status check err:', e));
+
+    async function startSpin() {
+      if (isSpinning) return;
+      isSpinning = true;
+      const spinBtn = document.getElementById('spinBtn');
+      spinBtn.disabled = true;
+      spinBtn.innerHTML = '<span>⏳ ÇARX FIRLANIR...</span>';
+
+      try {
+        const resp = await fetch('/api/wheel/spin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: tgUser.id,
+            username: tgUser.username,
+            first_name: tgUser.first_name,
+            device_id: deviceId
+          })
+        });
+
+        const data = await resp.json();
+
+        if (!data.ok) {
+          showModal("⛔ XƏTA", data.message, false);
+          spinBtn.innerHTML = '<span>⛔ İSTİFADƏ EDİLDİ</span>';
+          isSpinning = false;
+          return;
+        }
+
+        // Animation duration & target angle
+        const spins = 6; // full rotations
+        const targetSegment = data.status === 'WIN' ? 0 : 1; // orient towards visual segment
+        const segmentAngle = arc;
+        // Pointer is at top (3*PI / 2)
+        const finalAngle = (spins * 2 * Math.PI) + (Math.PI * 1.5 - (targetSegment * arc + arc/2));
+
+        const startTime = performance.now();
+        const duration = 4500; // 4.5 seconds
+
+        function animate(now) {
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          // Ease-out cubic
+          const easeOut = 1 - Math.pow(1 - progress, 3);
+          currentAngle = easeOut * finalAngle;
+          drawWheel();
+          
+          if (progress < 0.95 && Math.floor(elapsed / 120) % 2 === 0) {
+            playClickSound();
+          }
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            isSpinning = false;
+            if (data.status === 'WIN') {
+              playWinSound();
+              showModal("🎉 TƏBRİKLƏR! QALİB OLDUNUZ!", `🎁 Qazandığınız Xüsusi Endirim:\n<b>${data.prize}</b>\n\nAdminlə əlaqə saxlayaraq endiriminizi aktivləşdirin!`, true, data.prize);
+            } else {
+              showModal("😢 BƏXTİNİZ GƏTİRMƏDİ", "Çarx uduşsuz xanada dayandı. Amma narahat olmayın! <b>Məhsul Ovçusu</b> oyunumuzu oynayaraq 100 xal toplayıb istədiyiniz hesabı zəmanətli endirimlə əldə edə bilərsiniz!", false);
+            }
+          }
+        }
+        requestAnimationFrame(animate);
+
+      } catch (err) {
+        showModal("Xəta", "Şəbəkə xətası baş verdi: " + err.message, false);
+        isSpinning = false;
+        spinBtn.disabled = false;
+        spinBtn.innerHTML = '<span>🎰 ÇARXI FIRLAT (1 ŞANS)</span>';
+      }
+    }
+
+    function showModal(title, text, isWin, prizeName = '') {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalDesc').innerHTML = text;
+      document.getElementById('modalIcon').textContent = isWin ? '🏆' : '😢';
+      const claimBtn = document.getElementById('claimBtn');
+      if (isWin) {
+        claimBtn.classList.remove('hidden');
+        const waMsg = encodeURIComponent(`Salam, Çarxıfələkdən ${prizeName} endirimi qazandım! ID: ${tgUser.id}`);
+        claimBtn.href = `https://wa.me/994773026579?text=${waMsg}`;
+      } else {
+        claimBtn.classList.remove('hidden');
+        claimBtn.textContent = '🎮 Oyuna Keç və 100 Xal Yığ →';
+        claimBtn.href = '/static/game.html';
+        claimBtn.classList.remove('bg-emerald-500', 'hover:bg-emerald-400');
+        claimBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-500', 'text-white');
+      }
+      document.getElementById('resultModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('resultModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

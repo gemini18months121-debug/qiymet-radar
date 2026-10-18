@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🎮 Məhsul Ovçusu — Ucuzhesablar.com</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at top, #1e1b4b 0%, #09090b 100%);
+      color: #fff;
+      touch-action: none;
+      overflow: hidden;
+    }
+    #gameCanvas {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 27, 75, 0.9) 100%);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between select-none">
+
+  <!-- TOP BAR: User, Score & 100-Point Progress -->
+  <div class="p-3 bg-slate-900/90 border-b border-slate-800 z-10">
+    <div class="flex items-center justify-between mb-2">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">🎮</span>
+        <div>
+          <h1 class="text-sm font-extrabold text-white leading-tight">Məhsul Ovçusu</h1>
+          <p id="userLabel" class="text-[10px] text-slate-400">Yüklənir...</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="livesDisplay" class="text-xs">❤️❤️❤️</div>
+        <div class="text-right">
+          <div class="text-[10px] text-slate-400 uppercase font-bold">Ümumi Xal</div>
+          <div id="totalPointsDisplay" class="text-base font-black text-amber-400">0 / 100</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress bar towards 100 points -->
+    <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700">
+      <div id="progressBar" class="bg-gradient-to-r from-amber-500 to-emerald-400 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+    </div>
+  </div>
+
+  <!-- GAME CANVAS CONTAINER -->
+  <div class="relative flex-1 flex items-center justify-center overflow-hidden">
+    <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+    <!-- START / GAME OVER OVERLAY -->
+    <div id="overlayScreen" class="absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20">
+      <div id="overlayIcon" class="text-6xl mb-3">🧺</div>
+      <h2 id="overlayTitle" class="text-2xl font-black text-white">Məhsul Ovçusu!</h2>
+      <p id="overlayDesc" class="text-xs text-slate-300 mt-2 max-w-xs leading-relaxed">
+        Səbəti sağa-sola sürüşdürərək göydən düşən premium hesabları tutun və xal qazanın! 
+        <br><br>
+        🎯 <b>Hədəf:</b> 100 xal toplayaraq istədiyiniz 1 hesabı xüsusi endirimlə əldə edin!
+        <br>
+        ⚠️ <b>Diqqət:</b> Bombalardan (saxta satıcılardan) qaçın!
+      </p>
+
+      <button id="startBtn" onclick="startGame()" class="mt-6 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-slate-950 font-black text-base py-3 px-8 rounded-2xl shadow-lg shadow-amber-500/20 active:scale-95 transition">
+        ▶️ OYUNA BAŞLA
+      </button>
+
+      <!-- Claim button if >= 100 pts -->
+      <button id="claimRewardBtn" onclick="openClaimModal()" class="hidden mt-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs py-3 px-6 rounded-xl shadow-lg shadow-emerald-500/20 animate-bounce transition">
+        🎁 100 XALIN VAR: ENDİRİMLİ HESABI SEÇ!
+      </button>
+
+      <div class="mt-4 flex gap-4 text-xs text-slate-400">
+        <a href="/static/wheel.html" class="hover:text-amber-400 underline">🎡 Çarxıfələkə Keç</a>
+        <a href="https://ucuzhesablar.com" target="_blank" class="hover:text-emerald-400 underline">🌐 Ucuzhesablar.com</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM INSTRUCTION -->
+  <div class="p-2.5 bg-slate-900/90 border-t border-slate-800 text-center text-[11px] text-slate-400">
+    Barmağınızı ekranda sola və ya sağa çəkərək səbəti idarə edin.
+  </div>
+
+  <!-- REWARD SELECTION MODAL (100 XAL) -->
+  <div id="rewardModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-amber-500/40 rounded-3xl p-5 max-w-sm w-full text-center shadow-2xl">
+      <div class="text-4xl mb-1">🎉</div>
+      <h3 class="text-lg font-black text-white">TƏBRİKLƏR! 100 XAL!</h3>
+      <p class="text-xs text-slate-300 mt-1 mb-4">
+        Aşağıdakı 6 endirimli hesabdan <b>istədiyiniz 1 dənəsini</b> seçin:
+      </p>
+
+      <div class="flex flex-col gap-2 text-left text-xs max-h-64 overflow-y-auto pr-1">
+        <button onclick="selectProduct('Youtube Premium (2.46 AZN - 2.96 yox)')" class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 hover:border-amber-400 transition flex items-center justify-between">
+          <span>▶️ <b>YouTube Premium</b></span>
+          <span class="font-bold text-amber-400">2.46 AZN <span class="line-through text-slate-500 text-[10px]">2.96</span></span>
+        </button>
+        <button onclick="selectProduct('Spotify Premium (2.30 AZN - 2.70 yox)')" class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 hover:border-amber-400 transition flex items-center justify-between">
+          <span>🎵 <b>Spotify Premium</b></span>
+          <span class="font-bold text-amber-400">2.30 AZN <span class="line-through text-slate-500 text-[10px]">2.70</span></span>
+        </button>
+        <button onclick="selectProduct('Netflix Premium 1 Ay (2.30 AZN - 2.72 yox)')" class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 hover:border-amber-400 transition flex items-center justify-between">
+          <span>🎬 <b>Netflix 1 Ay</b></span>
+          <span class="font-bold text-amber-400">2.30 AZN <span class="line-through text-slate-500 text-[10px]">2.72</span></span>
+        </button>
+        <button onclick="selectProduct('Gemini Pro 18 Ay (2.50 AZN - 3.00 yox)')" class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 hover:border-amber-400 transition flex items-center justify-between">
+          <span>🤖 <b>Gemini Pro 18 Ay</b></span>
+          <span class="font-bold text-amber-400">2.50 AZN <span class="line-through text-slate-500 text-[10px]">3.00</span></span>
+        </button>
+        <button onclick="selectProduct('Capcut Pro 1 Ay (3.00 AZN - 3.50 yox)')" class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 hover:border-amber-400 transition flex items-center justify-between">
+          <span>✂️ <b>CapCut Pro 1 Ay</b></span>
+          <span class="font-bold text-amber-400">3.00 AZN <span class="line-through text-slate-500 text-[10px]">3.50</span></span>
+        </button>
+        <button onclick="selectProduct('Capcut Pro 1 Ay 1600 Kredit (3.80 AZN - 4.80 yox)')" class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 hover:border-amber-400 transition flex items-center justify-between">
+          <span>⚡ <b>CapCut 1600 Kredit</b></span>
+          <span class="font-bold text-amber-400">3.80 AZN <span class="line-through text-slate-500 text-[10px]">4.80</span></span>
+        </button>
+      </div>
+
+      <button onclick="closeClaimModal()" class="mt-4 text-xs text-slate-400 hover:text-white underline">
+        Ləğv et
+      </button>
+    </div>
+  </div>
+
+  <!-- CLAIM SUCCESS MODAL -->
+  <div id="successModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-emerald-500/50 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl">
+      <div class="text-5xl mb-2">🎁</div>
+      <h3 class="text-xl font-black text-white">MÜKAFAT TƏSDİQLƏNDİ!</h3>
+      <p class="text-xs text-slate-300 mt-2">
+        Seçdiyiniz Məhsul:<br><b id="chosenProdLabel" class="text-amber-400 text-sm"></b>
+      </p>
+      <div class="mt-3 bg-slate-800 p-3 rounded-2xl border border-slate-700">
+        <div class="text-[10px] text-slate-400 uppercase font-bold">Sizin Xüsusi Kupon Kodunuz:</div>
+        <div id="voucherCodeLabel" class="text-lg font-black text-emerald-400 tracking-wider select-all">UH-100X-XXXX</div>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-3 leading-relaxed">
+        Adminə (WhatsApp) kupon kodunuzu göndərərək endirimli hesabınızı dərhal təhvil alın!
+      </p>
+      <a id="waClaimBtn" href="#" target="_blank" class="mt-4 w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition flex items-center justify-center gap-2">
+        📲 WhatsApp İlə Təhvil Al
+      </a>
+      <button onclick="location.reload()" class="mt-2 text-xs text-slate-400 hover:text-white underline">
+        Oyuna Qayıt
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Audio synthesis
+    let audioCtx = null;
+    function beep(freq, duration, type='sine') {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch(e) {}
+    }
+
+    // Telegram User Setup
+    let tgUser = { id: 0, first_name: 'İstifadəçi', username: '' };
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+      const initData = window.Telegram.WebApp.initDataUnsafe;
+      if (initData && initData.user) {
+        tgUser = initData.user;
+      }
+    }
+    if (!tgUser.id) {
+      let savedId = localStorage.getItem('demo_tg_user_id');
+      if (!savedId) {
+        savedId = Math.floor(100000000 + Math.random() * 900000000);
+        localStorage.setItem('demo_tg_user_id', savedId);
+      }
+      tgUser.id = parseInt(savedId);
+      tgUser.first_name = 'Qonaq';
+    }
+    document.getElementById('userLabel').textContent = `👤 ${tgUser.first_name} (ID: ${tgUser.id})`;
+
+    function getDeviceFingerprint() {
+      let devUuid = localStorage.getItem('ucuzhesablar_device_uuid');
+      if (!devUuid) {
+        devUuid = 'dev_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+        localStorage.setItem('ucuzhesablar_device_uuid', devUuid);
+      }
+      const screenSign = `${window.screen.width}x${window.screen.height}`;
+      return `${devUuid}_${screenSign}`;
+    }
+    const deviceId = getDeviceFingerprint();
+
+    // User Points State
+    let userPoints = 0;
+    function updatePointsUI(pts) {
+      userPoints = pts;
+      document.getElementById('totalPointsDisplay').textContent = `${pts} / 100`;
+      const pct = Math.min(100, Math.round((pts / 100) * 100));
+      document.getElementById('progressBar').style.width = `${pct}%`;
+      const claimBtn = document.getElementById('claimRewardBtn');
+      if (pts >= 100) {
+        claimBtn.classList.remove('hidden');
+      } else {
+        claimBtn.classList.add('hidden');
+      }
+    }
+
+    // Load initial user points
+    fetch(`/api/game/user?user_id=${tgUser.id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.points !== undefined) updatePointsUI(data.points);
+      }).catch(e => console.log('Points err:', e));
+
+    // Canvas & Game Engine
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const ITEMS = [
+      { name: 'Spotify', icon: '🎵', points: 5, color: '#10B981', isBomb: false },
+      { name: 'YouTube', icon: '▶️', points: 5, color: '#EF4444', isBomb: false },
+      { name: 'Netflix', icon: '🎬', points: 10, color: '#E11D48', isBomb: false },
+      { name: 'Gemini', icon: '🤖', points: 10, color: '#4F46E5', isBomb: false },
+      { name: 'CapCut', icon: '✂️', points: 5, color: '#06B6D4', isBomb: false },
+      { name: 'Bomba', icon: '💣', points: -10, color: '#64748B', isBomb: true }
+    ];
+
+    let gameActive = false;
+    let roundScore = 0;
+    let lives = 3;
+    let roundStartTime = 0;
+
+    // Cart / Basket
+    const cart = {
+      width: 80,
+      height: 36,
+      x: 0,
+      y: 0,
+      targetX: 0
+    };
+
+    let fallingItems = [];
+    let lastSpawn = 0;
+
+    function resetCart() {
+      cart.x = (canvas.width - cart.width) / 2;
+      cart.y = canvas.height - cart.height - 15;
+      cart.targetX = cart.x;
+    }
+
+    // Touch & Mouse Movement
+    function handleMove(clientX) {
+      if (!gameActive) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = clientX - rect.left;
+      cart.targetX = Math.max(0, Math.min(canvas.width - cart.width, x - cart.width / 2));
+    }
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      handleMove(e.touches[0].clientX);
+    }, { passive: false });
+
+    canvas.addEventListener('mousemove', (e) => {
+      handleMove(e.clientX);
+    });
+
+    function spawnItem() {
+      const isBomb = Math.random() < 0.22;
+      const t = isBomb ? ITEMS[ITEMS.length - 1] : ITEMS[Math.floor(Math.random() * (ITEMS.length - 1))];
+      fallingItems.push({
+        x: Math.random() * (canvas.width - 40) + 10,
+        y: -30,
+        size: 32,
+        speed: 2.2 + Math.random() * 2.2,
+        ...t
+      });
+    }
+
+    function updateLivesUI() {
+      let hearts = '';
+      for (let i = 0; i < 3; i++) {
+        hearts += i < lives ? '❤️' : '🖤';
+      }
+      document.getElementById('livesDisplay').textContent = hearts;
+    }
+
+    function startGame() {
+      document.getElementById('overlayScreen').classList.add('hidden');
+      resizeCanvas();
+      resetCart();
+      roundScore = 0;
+      lives = 3;
+      updateLivesUI();
+      fallingItems = [];
+      gameActive = true;
+      roundStartTime = Date.now();
+      lastSpawn = performance.now();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function gameLoop(now) {
+      if (!gameActive) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Smooth cart movement
+      cart.x += (cart.targetX - cart.x) * 0.35;
+      cart.y = canvas.height - cart.height - 15;
+
+      // Draw Basket
+      ctx.fillStyle = '#F59E0B';
+      ctx.beginPath();
+      ctx.roundRect(cart.x, cart.y, cart.width, cart.height, [8, 8, 14, 14]);
+      ctx.fill();
+      ctx.strokeStyle = '#D97706';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Basket icon
+      ctx.fillStyle = '#0F172A';
+      ctx.font = 'bold 16px Plus Jakarta Sans';
+      ctx.textAlign = 'center';
+      ctx.fillText("🧺 UCUZ", cart.x + cart.width / 2, cart.y + 24);
+
+      // Spawn items
+      if (now - lastSpawn > 650) {
+        spawnItem();
+        lastSpawn = now;
+      }
+
+      // Update and draw falling items
+      for (let i = fallingItems.length - 1; i >= 0; i--) {
+        const item = fallingItems[i];
+        item.y += item.speed;
+
+        // Draw item bubble
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, item.size / 2, 0, Math.PI * 2);
+        ctx.fillStyle = item.color;
+        ctx.fill();
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Icon
+        ctx.font = '16px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(item.icon, item.x, item.y);
+
+        // Check collision with cart
+        if (
+          item.y + item.size / 2 >= cart.y &&
+          item.y - item.size / 2 <= cart.y + cart.height &&
+          item.x >= cart.x - 10 &&
+          item.x <= cart.x + cart.width + 10
+        ) {
+          // Collided!
+          if (item.isBomb) {
+            beep(180, 0.2, 'sawtooth');
+            lives--;
+            roundScore = Math.max(0, roundScore - 10);
+            updateLivesUI();
+            if (lives <= 0) {
+              endGame();
+              return;
+            }
+          } else {
+            beep(600 + item.points * 30, 0.08);
+            roundScore += item.points;
+          }
+          fallingItems.splice(i, 1);
+          continue;
+        }
+
+        // Check if item hit bottom
+        if (item.y > canvas.height + 40) {
+          fallingItems.splice(i, 1);
+        }
+      }
+
+      // Draw current round score in canvas
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 14px Plus Jakarta Sans';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Bu raund: +${roundScore} xal`, 15, 25);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    async function endGame() {
+      gameActive = false;
+      const durationSeconds = Math.round((Date.now() - roundStartTime) / 1000);
+
+      // Submit score to backend
+      try {
+        const resp = await fetch('/api/game/score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: tgUser.id,
+            username: tgUser.username,
+            first_name: tgUser.first_name,
+            score: roundScore,
+            device_id: deviceId
+          })
+        });
+        const data = await resp.json();
+        if (data.ok) {
+          updatePointsUI(data.new_points);
+        }
+      } catch (e) {
+        console.log('Error submitting score:', e);
+      }
+
+      // Show overlay
+      document.getElementById('overlayIcon').textContent = roundScore > 0 ? '🏆' : '💥';
+      document.getElementById('overlayTitle').textContent = `Raund Bitdi! (+${roundScore} Xal)`;
+      document.getElementById('overlayDesc').innerHTML = `
+        Bu raundda <b>+${roundScore} xal</b> qazandınız!<br>
+        Ümumi balansınız: <b class="text-amber-400 text-sm">${userPoints} / 100 XAL</b><br><br>
+        ${userPoints >= 100 ? '🎉 <b>TƏBRİKLƏR! 100 xalınız tamamlandı!</b> İndi istədiyiniz 1 endirimli hesabı seçə bilərsiniz!' : 'Daha bir neçə raund oynayaraq 100 xalı tamamlayın və 1 endirimli hesabı əldə edin!'}
+      `;
+      document.getElementById('startBtn').textContent = '🔄 YENİDƏN OYNA';
+      document.getElementById('overlayScreen').classList.remove('hidden');
+    }
+
+    function openClaimModal() {
+      document.getElementById('rewardModal').classList.remove('hidden');
+    }
+
+    function closeClaimModal() {
+      document.getElementById('rewardModal').classList.add('hidden');
+    }
+
+    async function selectProduct(productName) {
+      closeClaimModal();
+      try {
+        const resp = await fetch('/api/game/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: tgUser.id,
+            username: tgUser.username,
+            first_name: tgUser.first_name,
+            chosen_product: productName,
+            device_id: deviceId
+          })
+        });
+        const data = await resp.json();
+        if (data.ok) {
+          updatePointsUI(data.remaining_points);
+          document.getElementById('chosenProdLabel').textContent = productName;
+          document.getElementById('voucherCodeLabel').textContent = data.voucher_code;
+          const msg = encodeURIComponent(`Salam, Oyunda 100 xal toplayaraq ${productName} endirimi qazandım! Kupon kodum: ${data.voucher_code} (Telegram ID: ${tgUser.id})`);
+          document.getElementById('waClaimBtn').href = `https://wa.me/994773026579?text=${msg}`;
+          document.getElementById('successModal').classList.remove('hidden');
+        } else {
+          alert(data.message || 'Xəta baş verdi');
+        }
+      } catch (err) {
+        alert('Şəbəkə xətası: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
