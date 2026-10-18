@@ -22,6 +22,15 @@ logging.basicConfig(
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "8495554960")
 WEBAPP_URL = os.getenv("WEBAPP_URL") or os.getenv("RENDER_EXTERNAL_URL") or "https://qiymet-radar.onrender.com"
 
+def make_web_button(text: str, path: str):
+    """Creates a WebApp button if HTTPS is available, or regular URL button if HTTP."""
+    clean_base = WEBAPP_URL.rstrip("/")
+    target_url = f"{clean_base}{path}"
+    if clean_base.startswith("https://"):
+        return InlineKeyboardButton(text, web_app=WebAppInfo(url=target_url))
+    else:
+        return InlineKeyboardButton(text, url=target_url)
+
 USER_KEYBOARD = [
     ["🎬 Capcut Pro", "🪟 Windows 11 Pro"],
     ["🎨 Canva Pro", "💼 Microsoft 365"],
@@ -183,9 +192,8 @@ async def wheel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "«🎮 3D Oyun & Xal» bölməsində 3D oyunu oynayaraq və ya məntiq suallarını cavablandıraraq 100 xal toplayın və istədiyiniz hesabı endirimlə əldə edin!\n\n"
                 "🛍️ Saytımız: https://ucuzhesablar.com"
             )
-        webapp_game_url = f"{WEBAPP_URL}/game"
         kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🎮 3D Oyuna Keç (100 Xal Yığ)", web_app=WebAppInfo(url=webapp_game_url))]
+            [make_web_button("🎮 3D Oyuna Keç (100 Xal Yığ)", "/game")]
         ])
         await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
         return
@@ -208,12 +216,10 @@ async def wheel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👇 <i>Şansınızı yoxlamaq üçün aşağıdakı düyməyə basın:</i>"
     )
 
-    webapp_wheel_url = f"{WEBAPP_URL}/wheel"
-    webapp_game_url = f"{WEBAPP_URL}/game"
     kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🎡 Çarxı Aç & Fırlat (Mini App)", web_app=WebAppInfo(url=webapp_wheel_url))],
+        [make_web_button("🎡 Çarxı Aç & Fırlat", "/wheel")],
         [InlineKeyboardButton("🎰 Çatda Birbaşa Fırlat", callback_data="spin_wheel")],
-        [InlineKeyboardButton("🎮 3D Oyuna Keç (100 Xal Yığ)", web_app=WebAppInfo(url=webapp_game_url))]
+        [make_web_button("🎮 3D Oyuna Keç (100 Xal Yığ)", "/game")]
     ])
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
 
@@ -245,9 +251,8 @@ async def game_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👇 <i>Oyuna başlamaq və ya məntiq sualı cavablamaq üçün seçin:</i>"
     )
 
-    webapp_game_url = f"{WEBAPP_URL}/game"
     buttons = [
-        [InlineKeyboardButton("🎮 3D Oyunu Başlat (Mini App)", web_app=WebAppInfo(url=webapp_game_url))],
+        [make_web_button("🎮 3D Oyunu Başlat", "/game")],
         [InlineKeyboardButton("🧠 Məntiq Sualı Cavabla (+5 Xal)", callback_data="game_quiz")]
     ]
     if points >= 100:
@@ -281,7 +286,7 @@ async def quiz_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("C", callback_data=f"qans:{q['id']}:C")
         ],
         [InlineKeyboardButton("🔄 Başqa Sual", callback_data="game_quiz")],
-        [InlineKeyboardButton("🎮 3D Oyunu Aç (Mini App)", web_app=WebAppInfo(url=f"{WEBAPP_URL}/game"))]
+        [make_web_button("🎮 3D Oyunu Aç", "/game")]
     ]
     await update.message.reply_text(quiz_text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup(buttons))
 
@@ -621,7 +626,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 InlineKeyboardButton("C", callback_data=f"qans:{q['id']}:C")
             ],
             [InlineKeyboardButton("🔄 Başqa Sual Ver", callback_data="game_quiz")],
-            [InlineKeyboardButton("🎮 3D Oyunu Aç (Mini App)", web_app=WebAppInfo(url=f"{WEBAPP_URL}/game"))]
+            [make_web_button("🎮 3D Oyunu Aç", "/game")]
         ]
         await query.message.reply_text(quiz_text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup(buttons))
         return
@@ -650,7 +655,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             next_buttons = [
                 [InlineKeyboardButton("➡️ Növbəti Məntiq Sualı (+5 Xal)", callback_data="game_quiz")],
-                [InlineKeyboardButton("🎮 3D Oyuna Keç", web_app=WebAppInfo(url=f"{WEBAPP_URL}/game"))]
+                [make_web_button("🎮 3D Oyuna Keç", "/game")]
             ]
             if new_pts >= 100:
                 next_buttons.insert(0, [InlineKeyboardButton("🎁 100 Xalı Hesaba Dəyiş!", callback_data="game_claim_menu")])
@@ -668,7 +673,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             retry_buttons = [
                 [InlineKeyboardButton("🔄 Başqa Sualı Sına", callback_data="game_quiz")],
-                [InlineKeyboardButton("🎮 3D Oyuna Keç", web_app=WebAppInfo(url=f"{WEBAPP_URL}/game"))]
+                [make_web_button("🎮 3D Oyuna Keç", "/game")]
             ]
             await query.message.edit_text(ans_msg, parse_mode='HTML', reply_markup=InlineKeyboardMarkup(retry_buttons))
         return
