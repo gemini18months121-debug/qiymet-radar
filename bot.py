@@ -12,6 +12,7 @@ from database import (
     get_user_game_data, add_game_points, claim_game_reward, get_game_leaderboard, get_game_rewards_list,
     GAME_REWARD_OPTIONS
 )
+from quiz_data import get_random_quiz_question, get_question_by_id
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -25,16 +26,18 @@ USER_KEYBOARD = [
     ["🎬 Capcut Pro", "🪟 Windows 11 Pro"],
     ["🎨 Canva Pro", "💼 Microsoft 365"],
     ["🎵 Spotify", "🍿 Netflix 4K"],
-    ["🎡 Çarxıfələk (265 Xana)", "🎮 Oyun & Xal Yığ"],
-    ["👑 Ucuzhesablar.com", "❓ Kömək"]
+    ["🎡 Çarxıfələk (265 Xana)", "🎮 3D Oyun & Xal"],
+    ["🧠 Məntiq Sualı (+5 Xal)", "👑 Ucuzhesablar.com"],
+    ["❓ Kömək"]
 ]
 
 ADMIN_KEYBOARD = [
     ["🎬 Capcut Pro", "🪟 Windows 11 Pro"],
     ["🎨 Canva Pro", "💼 Microsoft 365"],
     ["🎵 Spotify", "🍿 Netflix 4K"],
-    ["🎡 Çarxıfələk", "🎮 Oyun & Xal Yığ"],
-    ["📊 Statistika Paneli", "👑 Ucuzhesablar.com"]
+    ["🎡 Çarxıfələk", "🎮 3D Oyun & Xal"],
+    ["🧠 Məntiq Sualı", "📊 Statistika Paneli"],
+    ["👑 Ucuzhesablar.com"]
 ]
 
 TRACKED_PRODUCTS = [
@@ -123,8 +126,9 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👋 <b>Salam! Qiymət Radar Botuna xoş gəlmisiniz.</b>\n\n"
         "👑 <b>Ucuzhesablar.com</b> və Azərbaycanın <b>22 əsas rəqəmsal satış saytını</b> "
         "eyni anda analiz edib <b>ən sərfəli qiyməti</b> tapıram.\n\n"
-        "🎡 <b>265 Xanalı Çarxıfələk:</b> «🎡 Çarxıfələk» bölməsinə keçərək şansınızı yoxlayın və 65 xüsusi endirimli hesabdan birini qazanın!\n\n"
-        "🎮 <b>Məhsul Ovçusu Oyunu:</b> «🎮 Oyun & Xal Yığ» bölməsində oynayaraq 100 xal toplayın və İSTƏDİYİNİZ 1 hesabı endirimlə əldə edin!\n\n"
+        "🎡 <b>265 Xanalı Çarxıfələk:</b> «🎡 Çarxıfələk» bölməsində şansınızı yoxlayaraq 65 xüsusi endirimli hesabdan birini qazanın!\n\n"
+        "🎮 <b>3D Məhsul Ovçusu Oyunu:</b> «🎮 3D Oyun & Xal» bölməsində 3D qəhrəmanı idarə edib xal toplayın və 100 xala İSTƏDİYİNİZ hesabı endirimlə əldə edin!\n\n"
+        "🧠 <b>100 Məntiq Sualı:</b> «🧠 Məntiq Sualı» bölməsində suallara düzgün cavab verərək hər suala +5 xal qazanın!\n\n"
         "🔍 <b>Axtarış üçün:</b>\n"
         "• Sadəcə məhsulun adını yazın (məs: <code>Capcut</code>, <code>Spotify</code>, <code>Canva</code>)\n"
         "• Və ya <code>/search &lt;məhsul&gt;</code> əmrindən istifadə edin."
@@ -139,8 +143,10 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "1. <b>23 Saytda Dəqiq Axtarış:</b> <code>/search Canva Pro</code> və ya birbaşa məhsul adını yazın.\n"
         "2. <b>Ağıllı Aylıq Müqayisə:</b> Tək məbləğə deyil, aylıq maya dəyərinə görə ən sərfəli təklif hesablanır.\n"
         "3. <b>🎡 265 Xanalı Çarxıfələk:</b> Hər cihazdan yalnız 1 hesab çarx çevirə bilər (Telegram ID + Cihaz ID + IP qorunması).\n"
-        "4. <b>🎮 Oyun & 100 Xal:</b> Məhsul ovçusu oyununu oynayıb 100 xal toplayaraq istədiyiniz 1 hesabı xüsusi endirimlə qazana bilərsiniz!\n"
-        "5. <b>Birbaşa Keçid:</b> Nəticənin altındakı düymə ilə birbaşa Ucuzhesablar.com-dan sifariş edə bilərsiniz."
+        "4. <b>🎮 3D Məhsul Ovçusu:</b> 3D oyunda loqoları tutaraq xal toplayın və bombalardan qaçın!\n"
+        "5. <b>🧠 100 Məntiq Sualı:</b> Maarifləndirici 100 ədəd 3 variantlı suala cavab verərək hər suala +5 xal qazanın!\n"
+        "6. <b>🎁 100 Xal Mükafatı:</b> 100 xalı tamamlayaraq 6 premium hesabdan istədiyinizi xüsusi endirimlə götürün!\n"
+        "7. <b>Birbaşa Keçid:</b> Nəticənin altındakı düymə ilə birbaşa Ucuzhesablar.com-dan sifariş edə bilərsiniz."
     )
     await update.message.reply_text(text, parse_mode='HTML')
 
@@ -174,12 +180,12 @@ async def wheel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "⛔ <b>Siz artıq çarxı çevirmisiniz!</b>\n\n"
                 "😢 Təəssüf ki, çarx uduşsuz xanada dayanmışdı. Hər istifadəçinin sistemdə <b>yalnız 1 dəfə</b> şansı var.\n\n"
                 "🎮 <b>Amma zəmanətli endirim qazanmaq şansınız var!</b>\n"
-                "«🎮 Oyun & Xal Yığ» bölməsində oynayaraq 100 xal toplayın və istədiyiniz hesabı endirimlə əldə edin!\n\n"
+                "«🎮 3D Oyun & Xal» bölməsində 3D oyunu oynayaraq və ya məntiq suallarını cavablandıraraq 100 xal toplayın və istədiyiniz hesabı endirimlə əldə edin!\n\n"
                 "🛍️ Saytımız: https://ucuzhesablar.com"
             )
-        webapp_game_url = f"{WEBAPP_URL}/static/game.html"
+        webapp_game_url = f"{WEBAPP_URL}/game"
         kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🎮 Oyuna Keç və 100 Xal Yığ", web_app=WebAppInfo(url=webapp_game_url))]
+            [InlineKeyboardButton("🎮 3D Oyuna Keç (100 Xal Yığ)", web_app=WebAppInfo(url=webapp_game_url))]
         ])
         await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
         return
@@ -202,12 +208,12 @@ async def wheel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👇 <i>Şansınızı yoxlamaq üçün aşağıdakı düyməyə basın:</i>"
     )
 
-    webapp_wheel_url = f"{WEBAPP_URL}/static/wheel.html"
-    webapp_game_url = f"{WEBAPP_URL}/static/game.html"
+    webapp_wheel_url = f"{WEBAPP_URL}/wheel"
+    webapp_game_url = f"{WEBAPP_URL}/game"
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("🎡 Çarxı Aç & Fırlat (Mini App)", web_app=WebAppInfo(url=webapp_wheel_url))],
         [InlineKeyboardButton("🎰 Çatda Birbaşa Fırlat", callback_data="spin_wheel")],
-        [InlineKeyboardButton("🎮 Oyuna Keç (100 Xal Yığ)", web_app=WebAppInfo(url=webapp_game_url))]
+        [InlineKeyboardButton("🎮 3D Oyuna Keç (100 Xal Yığ)", web_app=WebAppInfo(url=webapp_game_url))]
     ])
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
 
@@ -220,12 +226,14 @@ async def game_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     points = data["points"]
 
     msg = (
-        "🎮 <b>UCUZHESABLAR — MƏHSUL OVÇUSU OYUNU</b>\n"
+        "🎮 <b>UCUZHESABLAR — 3D MƏHSUL OVÇUSU OYUNU</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
         f"⭐ <b>Sizin Cari Xalınız:</b> <code>{points} / 100 XAL</code>\n"
         f"🕹️ <b>Oynanılan Oyun:</b> <code>{data['games_played']} dəfə</code>\n\n"
         "🎯 <b>Oyun Qaydası:</b>\n"
-        "Oyunda göydən düşən premium hesabları tutaraq xal toplayın. <b>100 Xal</b> topladıqda aşağıdakı 6 hesabdan <b>İSTƏDİYİNİZ 1 DƏNƏSİNİ</b> endirimlə əldə edə bilərsiniz!\n\n"
+        "Ortadakı 3D qəhrəmanı sağa-sola çəkərək göydən yağan premium loqoları (YouTube, Gemini, Capcut, Spotify, Canva, Duolingo, Netflix) tutun! Bombalardan qaçın!\n\n"
+        "🏆 <b>100 Xal = 1 Endirimli Hesab Seçimi:</b>\n"
+        "100 Xal topladıqda aşağıdakı 6 hesabdan <b>İSTƏDİYİNİZ 1 DƏNƏSİNİ</b> endirimlə əldə edə bilərsiniz!\n\n"
         "🎁 <b>Seçilə Bilən Endirimli Hesablar:</b>\n"
         "• 🎬 <b>Netflix Premium 1 Ay</b> — 2.30 AZN <i>(2.72 yox)</i>\n"
         "• ▶️ <b>YouTube Premium</b> — 2.46 AZN <i>(2.96 yox)</i>\n"
@@ -234,13 +242,13 @@ async def game_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• ✂️ <b>CapCut Pro 1 Ay</b> — 3.00 AZN <i>(3.50 yox)</i>\n"
         "• ⚡ <b>CapCut Pro 1600 Kredit</b> — 3.80 AZN <i>(4.80 yox)</i>\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        "👇 <i>Oyunu başlatmaq və ya xalınızı mükafata dəyişmək üçün seçin:</i>"
+        "👇 <i>Oyuna başlamaq və ya məntiq sualı cavablamaq üçün seçin:</i>"
     )
 
-    webapp_game_url = f"{WEBAPP_URL}/static/game.html"
+    webapp_game_url = f"{WEBAPP_URL}/game"
     buttons = [
-        [InlineKeyboardButton("🎮 Oyunu Başlat (Məhsul Ovçusu)", web_app=WebAppInfo(url=webapp_game_url))],
-        [InlineKeyboardButton("⚡ Çatda Sual Cavabla Xal Qazan (+10 Xal)", callback_data="game_quiz")]
+        [InlineKeyboardButton("🎮 3D Oyunu Başlat (Mini App)", web_app=WebAppInfo(url=webapp_game_url))],
+        [InlineKeyboardButton("🧠 Məntiq Sualı Cavabla (+5 Xal)", callback_data="game_quiz")]
     ]
     if points >= 100:
         buttons.append([InlineKeyboardButton("🎁 100 Xalı Endirimli Hesaba Dəyiş!", callback_data="game_claim_menu")])
@@ -248,6 +256,34 @@ async def game_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     kb = InlineKeyboardMarkup(buttons)
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
+
+async def quiz_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Direct in-chat 100 logic questions quiz entrypoint."""
+    user = update.effective_user
+    log_user_activity(user.id, user.username, user.first_name)
+
+    q = get_random_quiz_question()
+    quiz_text = (
+        f"🧠 <b>MƏNTİQ VƏ BİLİK VİKTORİNASI (+5 XAL)</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"📌 <b>Sual #{q['id']}:</b>\n"
+        f"{q['q']}\n\n"
+        f"<b>A)</b> {q['a']}\n"
+        f"<b>B)</b> {q['b']}\n"
+        f"<b>C)</b> {q['c']}\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"👇 <i>Düzgün variantı seçin:</i>"
+    )
+    buttons = [
+        [
+            InlineKeyboardButton("A", callback_data=f"qans:{q['id']}:A"),
+            InlineKeyboardButton("B", callback_data=f"qans:{q['id']}:B"),
+            InlineKeyboardButton("C", callback_data=f"qans:{q['id']}:C")
+        ],
+        [InlineKeyboardButton("🔄 Başqa Sual", callback_data="game_quiz")],
+        [InlineKeyboardButton("🎮 3D Oyunu Aç (Mini App)", web_app=WebAppInfo(url=f"{WEBAPP_URL}/game"))]
+    ]
+    await update.message.reply_text(quiz_text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup(buttons))
 
 async def stat_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
@@ -339,6 +375,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     elif "oyun" in raw_text.lower() or "xal" in raw_text.lower():
         await game_cmd(update, context)
+        return
+    elif "sual" in raw_text.lower() or "məntiq" in raw_text.lower() or "mentiq" in raw_text.lower():
+        await quiz_cmd(update, context)
         return
 
     # Clean emojis (e.g. "🎬 Capcut Pro" -> "Capcut Pro")
@@ -549,7 +588,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "━━━━━━━━━━━━━━━━━━━━\n"
                 "265 xana arasında bu dəfə bəxtiniz gətirmədi. Hər istifadəçi üçün yalnız 1 dəfə çarx çevirmək limiti var.\n\n"
                 "🎮 <b>Amma zəmanətli endirim qazana bilərsiniz!</b>\n"
-                "«🎮 Oyun & Xal Yığ» bölməsində oynayaraq 100 xal toplayın və İSTƏDİYİNİZ hesabı endirimlə götürün!\n\n"
+                "«🎮 3D Oyun & Xal» bölməsində 3D oyunu oynayaraq və ya məntiq suallarını cavablandıraraq 100 xal toplayın və İSTƏDİYİNİZ hesabı endirimlə götürün!\n\n"
                 "🌐 <b>Saytımız:</b> https://ucuzhesablar.com\n"
                 "📲 <b>WhatsApp:</b> https://wa.me/994773026579"
             )
@@ -561,35 +600,77 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         return
 
-    # 4. In-chat Quiz
+    # 4. In-chat Quiz with 100 Logic Questions
     if query.data == "game_quiz":
+        q = get_random_quiz_question()
         quiz_text = (
-            "🧠 <b>Sürətli Qiymət Viktorinası (+10 Xal):</b>\n\n"
-            "❓ <b>Sual:</b> Azərbaycanda Spotify Premium 4 ayı cəmi 6.20 AZN (aylıq 1.55 ₼) ən ucuz hansı mağazada satılır?"
+            f"🧠 <b>MƏNTİQ VƏ BİLİK VİKTORİNASI (+5 XAL)</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"📌 <b>Sual #{q['id']}:</b>\n"
+            f"{q['q']}\n\n"
+            f"<b>A)</b> {q['a']}\n"
+            f"<b>B)</b> {q['b']}\n"
+            f"<b>C)</b> {q['c']}\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"👇 <i>Düzgün variantı seçin:</i>"
         )
         buttons = [
-            [InlineKeyboardButton("A) Ucuzhesablar.com 👑", callback_data="quiz_correct")],
-            [InlineKeyboardButton("B) Digər bahalı mağazalarda ❌", callback_data="quiz_wrong")]
+            [
+                InlineKeyboardButton("A", callback_data=f"qans:{q['id']}:A"),
+                InlineKeyboardButton("B", callback_data=f"qans:{q['id']}:B"),
+                InlineKeyboardButton("C", callback_data=f"qans:{q['id']}:C")
+            ],
+            [InlineKeyboardButton("🔄 Başqa Sual Ver", callback_data="game_quiz")],
+            [InlineKeyboardButton("🎮 3D Oyunu Aç (Mini App)", web_app=WebAppInfo(url=f"{WEBAPP_URL}/game"))]
         ]
         await query.message.reply_text(quiz_text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup(buttons))
         return
 
-    if query.data == "quiz_correct":
-        new_pts, _ = add_game_points(user.id, user.username, user.first_name, 10, "telegram_quiz", "")
-        await query.message.edit_text(
-            f"🎉 <b>DÜZGÜN CAVAB!</b> (+10 XAL)\n\n"
-            f"Bəli, bazarda ən sərfəli və zəmanətli qiymətlər yalnız <b>Ucuzhesablar.com</b>-dadır!\n\n"
-            f"⭐ <b>Sizin Cari Xalınız:</b> <code>{new_pts} / 100 XAL</code>\n"
-            f"{'🏆 <b>100 xalınız tamamlandı!</b> İndi istədiyiniz hesabı endirimlə seçə bilərsiniz!' if new_pts >= 100 else 'Daha çox xal toplamaq üçün oyunu oynayın və ya növbəti sualları cavablandırın!'}",
-            parse_mode='HTML'
-        )
-        return
+    if query.data.startswith("qans:"):
+        parts = query.data.split(":")
+        qid = int(parts[1])
+        chosen = parts[2]
+        q = get_question_by_id(qid)
 
-    if query.data == "quiz_wrong":
-        await query.message.edit_text(
-            "❌ <b>Səhv cavab!</b> Ən ucuz qiymətlər yalnız <b>Ucuzhesablar.com</b>-dadır! Bir az sonra təkrar cəhd edin.",
-            parse_mode='HTML'
-        )
+        is_correct = (chosen == q["correct"])
+        u_data = get_user_game_data(user.id)
+        current_pts = u_data["points"]
+
+        if is_correct:
+            new_pts, _ = add_game_points(user.id, user.username, user.first_name, 5, "telegram_quiz", "")
+            ans_msg = (
+                f"🎉 <b>DÜZGÜN CAVAB! (+5 XAL QAZANDINIZ)</b> 👏\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"✅ <b>Düzgün Variant:</b> <b>{q['correct']})</b> {q[q['correct'].lower()]}\n\n"
+                f"💡 <b>Maarifləndirici İzah:</b>\n"
+                f"<i>{q['exp']}</i>\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"⭐ <b>Sizin Cari Xalınız:</b> <code>{new_pts} / 100 XAL</code>\n"
+                f"{'🏆 <b>100 xalınız tamamlandı!</b> İndi istədiyiniz hesabı endirimlə seçə bilərsiniz!' if new_pts >= 100 else '100 xal toplayaraq istədiyiniz hesabı endirimlə əldə edin!'}"
+            )
+            next_buttons = [
+                [InlineKeyboardButton("➡️ Növbəti Məntiq Sualı (+5 Xal)", callback_data="game_quiz")],
+                [InlineKeyboardButton("🎮 3D Oyuna Keç", web_app=WebAppInfo(url=f"{WEBAPP_URL}/game"))]
+            ]
+            if new_pts >= 100:
+                next_buttons.insert(0, [InlineKeyboardButton("🎁 100 Xalı Hesaba Dəyiş!", callback_data="game_claim_menu")])
+            await query.message.edit_text(ans_msg, parse_mode='HTML', reply_markup=InlineKeyboardMarkup(next_buttons))
+        else:
+            ans_msg = (
+                f"❌ <b>TƏƏSSÜF Kİ, SƏHV CAVAB!</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"Sizin seçiminiz: <b>{chosen}</b>\n"
+                f"✅ <b>Düzgün Variant:</b> <b>{q['correct']})</b> {q[q['correct'].lower()]}\n\n"
+                f"💡 <b>Maarifləndirici İzah:</b>\n"
+                f"<i>{q['exp']}</i>\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"⭐ <b>Cari Xalınız:</b> <code>{current_pts} / 100 XAL</code>"
+            )
+            retry_buttons = [
+                [InlineKeyboardButton("🔄 Başqa Sualı Sına", callback_data="game_quiz")],
+                [InlineKeyboardButton("🎮 3D Oyuna Keç", web_app=WebAppInfo(url=f"{WEBAPP_URL}/game"))]
+            ]
+            await query.message.edit_text(ans_msg, parse_mode='HTML', reply_markup=InlineKeyboardMarkup(retry_buttons))
         return
 
     # 5. Game Claim Menu
@@ -597,7 +678,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         u_data = get_user_game_data(user.id)
         if u_data["points"] < 100:
             await query.message.reply_text(
-                f"⚠️ <b>Kifayət qədər xalınız yoxdur!</b>\nSizdə cəmi <code>{u_data['points']}</code> xal var. Minimum <b>100 Xal</b> lazımdır.\nOyunu oynayaraq xal toplayın!",
+                f"⚠️ <b>Kifayət qədər xalınız yoxdur!</b>\nSizdə cəmi <code>{u_data['points']}</code> xal var. Minimum <b>100 Xal</b> lazımdır.\nOyunu oynayaraq və ya məntiq suallarına cavab verərək xal toplayın!",
                 parse_mode='HTML'
             )
             return
@@ -802,6 +883,8 @@ def run_bot(token: str):
     app.add_handler(CommandHandler("oyun", game_cmd))
     app.add_handler(CommandHandler("game", game_cmd))
     app.add_handler(CommandHandler("xal", game_cmd))
+    app.add_handler(CommandHandler("sual", quiz_cmd))
+    app.add_handler(CommandHandler("quiz", quiz_cmd))
     app.add_handler(CommandHandler("qalibler", winners_cmd))
     app.add_handler(CommandHandler("kuponlar", game_rewards_cmd))
     app.add_handler(CommandHandler("alert_indi", test_alert_cmd))
@@ -813,7 +896,7 @@ def run_bot(token: str):
         asyncio.create_task(check_prices_for_admin(application))
     
     app.post_init = post_init
-    print("Telegram bot started with 265-slot Wheel, Mini App Game, Anti-Fraud, and 23 sites...")
+    print("Telegram bot started with 3D Game, 100 Logic Questions, 265-slot Wheel, and 23 sites...")
     app.run_polling()
 
 if __name__ == '__main__':
